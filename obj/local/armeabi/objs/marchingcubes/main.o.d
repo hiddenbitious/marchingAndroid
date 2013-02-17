@@ -39,6 +39,12 @@
  /home/stolou/Projects/MarchingCubesActivity/jni/bsphere.h \
  /home/stolou/Projects/MarchingCubesActivity/jni/bvolumes.h \
  /home/stolou/Projects/MarchingCubesActivity/jni/bbox.h \
+ /home/stolou/Projects/MarchingCubesActivity/jni/timer.h \
+ /home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/sys/time.h \
+ /home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/linux/time.h \
+ /home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/time.h \
+ /home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/asm/siginfo.h \
+ /home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/asm-generic/siginfo.h \
  /home/stolou/Projects/MarchingCubesActivity/jni/glsl/glsl.h \
  /home/stolou/Projects/MarchingCubesActivity/jni/glsl/../globals.h \
  /home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/string.h \
@@ -128,6 +134,18 @@
 /home/stolou/Projects/MarchingCubesActivity/jni/bvolumes.h:
 
 /home/stolou/Projects/MarchingCubesActivity/jni/bbox.h:
+
+/home/stolou/Projects/MarchingCubesActivity/jni/timer.h:
+
+/home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/sys/time.h:
+
+/home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/linux/time.h:
+
+/home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/time.h:
+
+/home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/asm/siginfo.h:
+
+/home/stolou/Projects/adt-bundle-linux-x86_64/android-ndk-r8d/platforms/android-14/arch-arm/usr/include/asm-generic/siginfo.h:
 
 /home/stolou/Projects/MarchingCubesActivity/jni/glsl/glsl.h:
 

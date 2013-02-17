@@ -19,6 +19,7 @@
 
 #define JNI_COMPATIBLE
 //#define ENABLE_LOGGING
+//#define ENABLE_TIMING
 
 #ifdef JNI_COMPATIBLE
 #	include <jni.h>

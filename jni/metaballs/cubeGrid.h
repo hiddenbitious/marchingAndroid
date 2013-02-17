@@ -7,10 +7,10 @@
 #include "metaball.h"
 #include "../frustum.h"
 
-#define CUBES_PER_AXIS	25
-#define CUBE_SIZE		2
+#define CUBES_PER_AXIS	30
+#define CUBE_SIZE		1.5f
 #define THRESHOLD		1.0f
-#define MAX_TRIANGLES	4000
+#define MAX_TRIANGLES	2000
 
 struct grid_triangle {
 	C_Vertex vertex0;

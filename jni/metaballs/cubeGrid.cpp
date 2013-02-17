@@ -271,22 +271,22 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 		}
 	}
 
-	LOGI("%s:%s: nTriangles: %d\n", __FILE__, __FUNCTION__, nTriangles);
-	LOGI("modelView matrix:\n");
-	for(int x = 0; x < 4; x++) {
-		for(int y = 0; y < 4; y++) {
-			LOGI("%f ", globalModelviewMatrix.m[x][y]);
-		}
-		LOGI("\n");
-	}
-
-	LOGI("projection matrix:\n");
-	for(int x = 0; x < 4; x++) {
-		for(int y = 0; y < 4; y++) {
-			LOGI("%f ", globalProjectionMatrix.m[x][y]);
-		}
-		LOGI("\n");
-	}
+//	LOGI("%s:%s: nTriangles: %d\n", __FILE__, __FUNCTION__, nTriangles);
+//	LOGI("modelView matrix:\n");
+//	for(int x = 0; x < 4; x++) {
+//		for(int y = 0; y < 4; y++) {
+//			LOGI("%f ", globalModelviewMatrix.m[x][y]);
+//		}
+//		LOGI("\n");
+//	}
+//
+//	LOGI("projection matrix:\n");
+//	for(int x = 0; x < 4; x++) {
+//		for(int y = 0; y < 4; y++) {
+//			LOGI("%f ", globalProjectionMatrix.m[x][y]);
+//		}
+//		LOGI("\n");
+//	}
 
 	shader->Begin();
 

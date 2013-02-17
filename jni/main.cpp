@@ -18,10 +18,10 @@
 
 #include "camera.h"
 #include "vectors.h"
+#include "timer.h"
 #include "glsl/glsl.h"
 #include "metaballs/cubeGrid.h"
 #include "metaballs/metaball.h"
-
 #include "mmath.h"
 
 static void printGLString(const char *name, GLenum s) {
@@ -63,8 +63,14 @@ static bool frustumCulling = true;
 static C_Vector3 center(0.0f , 0.0f , 0.0f);
 
 /// Timer vars
+#ifdef ENABLE_TIMING
+static void CountFps(void);
+C_Timer timer;
+float start = timer.GetTime ();
+static float timeElapsed = 0.0f;
+#else
 static float timeElapsed = 0.2f;
-static float fps;
+#endif
 
 /// Metaballs
 static C_CubeGrid grid;
@@ -144,7 +150,9 @@ static void Initializations(GLint w , GLint h)
     checkGlError("glViewport");
 
 	/// timer initialization
-//	timer.Initialize ();
+	#ifdef ENABLE_TIMING
+	timer.Initialize ();
+	#endif
 }
 
 static void Draw(void)
@@ -174,7 +182,29 @@ static void Draw(void)
 
 	grid.Update(metaball , 3 , NULL);
 	grid.Draw(NULL);
+
+	/// Update timer
+	#ifdef ENABLE_TIMING
+	timer.Update ();
+	timeElapsed = timer.GetDelta () / 1000.0f;
+	CountFps();
+	#endif
 }
+
+#ifdef ENABLE_TIMING
+static void CountFps(void)
+{
+	static int count = 0;
+	float delta = timer.GetTime () - start;
+	count++;
+
+	if(delta >= 1000.0f) {
+		LOGI("fps: %d\n", count);
+		start = timer.GetTime ();
+		count = 0;
+	}
+}
+#endif
 
 extern "C" {
     JNIEXPORT void JNICALL Java_com_android_marchingcubes_MarchingCubesLib_init(JNIEnv * env, jobject obj,  jint width, jint height);
