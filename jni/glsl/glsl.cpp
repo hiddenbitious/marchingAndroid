@@ -16,6 +16,8 @@
 
 #include "glsl.h"
 
+#define JNI_COMPATIBLE
+
 #ifndef JNI_COMPATIBLE
 #	include <fstream>
 #	include <assert.h>
@@ -147,6 +149,8 @@ bool C_GLShaderObject::compile(bool printSource)
 	}
 	#endif
 
+	LOGI("about to compile:\n");
+	LOGI("%s\n", shaderSource);
 	glShaderSource(shaderObject , 1 , (const GLchar **)&shaderSource , NULL);
 
 	//Compile shader
@@ -272,6 +276,9 @@ bool C_GLShader::Link(void)
 		//Get log size
 		int logSize = 0;
 		glGetShaderiv(programObject , GL_INFO_LOG_LENGTH , &logSize);
+		if(linkerLog) {
+			delete[] linkerLog;
+		}
 		linkerLog = new char[logSize];
 
 		glGetProgramInfoLog(programObject , logSize , NULL , linkerLog);
@@ -759,10 +766,10 @@ C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	C_GLVertexShader* tVertexShader;
 	C_GLFragmentShader* tFragmentShader;
 
-	LOGI("\n********************************************************************************\n\n");
+	LOGI("\n***********************************************\n\n");
 	LOGI("Loading shader . . .\n");
 
-	// Load vertex shader
+	/// Load vertex shader
 	tVertexShader = new C_GLVertexShader();
 	shaderObject = new C_GLShader();
 
@@ -774,7 +781,7 @@ C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	}
 	LOGI("done!\n");
 
-	// Load fragment shader
+	/// Load fragment shader
 	tFragmentShader = new C_GLFragmentShader();
 
 	LOGI("Loading fragment shader\n");
@@ -786,60 +793,67 @@ C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	}
 	LOGI("done!\n");
 
-	// Compile vertex shader
-
+	/// Compile vertex shader
 	LOGI("Compiling vertex shader...\n");
 	if(!tVertexShader->compile(true)) {
 		LOGE("Error compiling vertex shader\n");
-//		cout << "Compiler log: " << endl;
-//		cout << tVertexShader->compilerLog << endl;
+		LOGE("Compiler log:\n");
+		if(tVertexShader->compilerLog)
+			LOGE("%s\n", tVertexShader->compilerLog);
 		delete tVertexShader;
 		delete tFragmentShader;
 		return shaderObject;
 	}
 	LOGI("...done!\n");
-//	if(tVertexShader->compilerLog.size()) {
-//		cout << "Compiler log: " << endl;
-//		cout << tVertexShader->compilerLog << endl;
+//	if(tVertexShader->compilerLog) {
+//		LOGI("Compiler log: %s\n", tVertexShader->compilerLog);
+//		delete[] tVertexShader->compilerLog;
+//		tVertexShader->compilerLog = NULL;
 //	}
 
 	// Compile fragment shader
-
 	LOGI("Compiling fragment shader...\n");
 	if(!tFragmentShader->compile(true)) {
 		LOGE("Error compiling fragment shader\n");
-//		cout << "Compiler log: " << endl;
-//		cout << tFragmentShader->compilerLog << endl;
+		LOGE("Compiler log:\n");
+		if(tFragmentShader->compilerLog)
+			LOGE("%s\n", tFragmentShader->compilerLog);
 		delete tVertexShader;
 		delete tFragmentShader;
 		return shaderObject;
 	}
 	LOGI("...done!\n");
-//	if(tFragmentShader->compilerLog.size()) {
-//		cout << "Compiler log: " << endl;
-//		cout << tFragmentShader->compilerLog << endl;
+//	if(tFragmentShader->compilerLog) {
+//		LOGI("Compiler log: %s\n", tFragmentShader->compilerLog);
+//		delete[] tFragmentShader->compilerLog;
+//		tFragmentShader->compilerLog = NULL;
 //	}
 
-	// Add shaders to shader object
+	/// Add shaders to shader object
 	shaderObject->AddShader(tVertexShader);
 	shaderObject->AddShader(tFragmentShader);
 
-	// Link shader object
-//	cout << "----------------------------------------------------------" << endl;
+	/// Link shader object
 	LOGI("Linking shader objects...");
 	if(!shaderObject->Link()) {
 		LOGE("\nError linking shader programs.\n");
-//		cout << shaderObject->linkerLog << "\n\n";
+		LOGE("Linker log:\n%s\n", shaderObject->linkerLog);
 		delete tVertexShader;
 		delete tFragmentShader;
 		return shaderObject;
 	}
-	LOGI("done!\n");
-	LOGI("\n********************************************************************************\n\n");
+	if(shaderObject->linkerLog) {
+		LOGI("Linker log:\n%s\n", shaderObject->linkerLog);
+		delete[] shaderObject->linkerLog;
+		shaderObject->linkerLog = NULL;
+	}
 
-//	shaderList.push_back(shaderObject);
-	if(!shaderList)
+	LOGI("done!\n");
+	LOGI("\n***********************************************\n\n");
+
+	if(!shaderList) {
 		delete shaderList;
+	}
 	shaderList = shaderObject;
 
 	return shaderObject;
@@ -943,6 +957,7 @@ bool CheckGLSL(void)
 #else
 bool CheckGLSL(void)
 {
-	return glslAvailable = true;
+	glslAvailable = true;
+	return true;
 }
 #endif

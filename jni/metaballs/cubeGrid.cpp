@@ -19,17 +19,22 @@ attribute vec4 a_normals;\n\
 \n\
 uniform mat4 u_modelviewMatrix;\n\
 uniform mat4 u_projectionMatrix;\n\
+\n\
+varying mediump vec4 v_color;\n\
+\n\
 void main ( void )\n\
 {\n\
 	mat4 mvpMatrix = u_projectionMatrix * u_modelviewMatrix;\n\
 	gl_Position = mvpMatrix * a_vertices;\n\
-	gl_FrontColor = a_normals;\n\
+	v_color = a_normals;\n\
 }\0"};
 
 static const char fragmentShaderSource [] = {
-"void main (void)\n\
+"varying mediump vec4 v_color;\n\
+\n\
+void main (void)\n\
 {\n\
-	gl_FragColor = gl_Color;\n\
+	gl_FragColor = v_color;\n\
 }\0" };
 
 static grid_vertex edgeVertices[12];

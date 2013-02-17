@@ -80,6 +80,8 @@ static void Initializations(GLint w , GLint h)
 
     LOGI("setupGraphics(%d, %d)", w, h);
 
+   	CheckGLSL();
+
 	/// Set clear color
 	glClearColor(0.3671875f , 0.15234375f , 0.8359375f , 1.0f);
 
@@ -139,8 +141,6 @@ static void Initializations(GLint w , GLint h)
 	windowHeight = h;
     glViewport(0, 0, w, h);
     checkGlError("glViewport");
-
-	CheckGLSL();
 
 	/// timer initialization
 //	timer.Initialize ();
