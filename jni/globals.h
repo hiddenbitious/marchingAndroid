@@ -18,6 +18,7 @@
 #define _GLOBALS_H_
 
 #define JNI_COMPATIBLE
+//#define ENABLE_LOGGING
 
 #ifdef JNI_COMPATIBLE
 #	include <jni.h>
@@ -25,9 +26,14 @@
 #	include <GLES2/gl2.h>
 #	include <GLES2/gl2ext.h>
 
-#	define 	LOG_TAG		"marchingJNI"
-#	define  LOGI(...)	__android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-#	define  LOGE(...)	__android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#	ifdef ENABLE_LOGGING
+#		define 	LOG_TAG		"marchingJNI"
+#		define  LOGI(...)	__android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#		define  LOGE(...)	__android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#	else
+#		define  LOGI(...)
+#		define  LOGE(...)
+#	endif
 #else
 #	define  LOGI 		printf
 #	define  LOGE		printf

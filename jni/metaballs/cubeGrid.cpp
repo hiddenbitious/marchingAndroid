@@ -30,7 +30,7 @@ void main ( void )\n\
 }\0"};
 
 static const char fragmentShaderSource [] = {
-"varying mediump vec4 v_color;\n\
+"varying highp vec4 v_color;\n\
 \n\
 void main (void)\n\
 {\n\

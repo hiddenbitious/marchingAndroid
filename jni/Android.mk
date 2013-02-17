@@ -17,7 +17,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := marchingcubes
-LOCAL_CFLAGS    := -Werror
+LOCAL_CFLAGS    := -Werror -O3
 LOCAL_SRC_FILES := bbox.cpp vectors.cpp main.cpp camera.cpp frustum.cpp mmath.cpp plane.cpp quaternion.cpp glsl/glsl.cpp metaballs/cubeGrid.cpp
 LOCAL_LDLIBS    := -llog -lGLESv2
 TARGET_ARCH		:= arm

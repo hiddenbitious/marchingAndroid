@@ -183,24 +183,6 @@ void C_Camera::setProjection(int w , int h)
 
 	esMatrixLoadIdentity(&globalProjectionMatrix);
 	esPerspective(&globalProjectionMatrix, fov, float(w) / float(h), zNear, zFar);
-
-//	glMatrixMode(GL_PROJECTION);
-//	glLoadIdentity();
-//
-////	float ratio = float(w) / float(h);
-////	gluPerspective ( fov , ratio , zNear , zFar );
-//
-//	float aspect = (float)w / (float)h;
-//	float f = cos(fov * DEGREES_TO_RADIANS) / sin(fov * DEGREES_TO_RADIANS);
-//
-//	float projMatrix[16] = { f / aspect, 0.0f,	0.0f,									0.0f ,
-//							 0.0f,		 f,		0.0f,									0.0f ,
-//							 0.0f,		 0.0f,	(zFar + zNear) / (zNear - zFar),		-1.0f ,
-//							 0.0f,		 0.0f, 	(2 * zFar * zNear) / (zNear - zFar),	0.0f};
-//
-//	glMultMatrixf(projMatrix);
-
-//	glMatrixMode(GL_MODELVIEW);
 }
 
 #ifndef JNI_COMPATIBLE

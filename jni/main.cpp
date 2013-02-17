@@ -110,14 +110,14 @@ static void Initializations(GLint w , GLint h)
 	// Enose tin camera me to frustum kai dose times gia tin proboli
 	camera.frustum = &frustum;
 	camera.fov = 50.0f;
-	camera.zFar = 800.0f;
+	camera.zFar = 200.0f;
 	camera.zNear = 1.0f;
 
 	/// Load shaders
 //	basicShader_texture = shaderManager.LoadShaderProgram("basic_withSingleTexture.vert" , "basic_withSingleTexture.frag");
 
 	/// metaballs initialization
-	grid.Constructor(-50.0f , 0.0f , -150.0f);
+	grid.Constructor(-20.0f , 0.0f , -80.0f);
 
 	metaball[0].Constructor();
 	metaball[0].position.x = 10.0f;

@@ -3,22 +3,16 @@ package com.android.marchingcubes;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
-import android.util.AttributeSet;
+//import android.util.AttributeSet;
 import android.util.Log;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
+//import android.view.KeyEvent;
+//import android.view.MotionEvent;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.opengles.GL10;
-
-/*import com.android.gl2jni.GL2JNILib;
-import com.android.gl2jni.GL2JNIView.ConfigChooser;
-import com.android.gl2jni.GL2JNIView.ContextFactory;
-import com.android.gl2jni.GL2JNIView.Renderer;*/
-
 
 public class MarchingCubesView extends GLSurfaceView {
 	private static String TAG = "MarchingCubesView";
@@ -281,7 +275,7 @@ public class MarchingCubesView extends GLSurfaceView {
 
     private static class Renderer implements GLSurfaceView.Renderer {
         public void onDrawFrame(GL10 gl) {
-        	Log.w(TAG, "calling MarchingCubesLib.init ??!\n");
+//        	Log.w(TAG, "calling MarchingCubesLib.init ??!\n");
         	MarchingCubesLib.step();
         }
 
