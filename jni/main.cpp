@@ -140,6 +140,7 @@ static void Initializations(GLint w , GLint h)
 	windowWidth = w;
 	windowHeight = h;
     glViewport(0, 0, w, h);
+   	camera.setProjection(w , h);
     checkGlError("glViewport");
 
 	/// timer initialization
@@ -148,8 +149,6 @@ static void Initializations(GLint w , GLint h)
 
 static void Draw(void)
 {
-	C_Vector3 cameraPosition = camera.GetPosition();
-
 	/// Make the angle rotation independant of the cpu speed
 	angle += .2f * timeElapsed;
 	if(angle >= 360.0f) { angle = 0.0f; }
@@ -173,28 +172,8 @@ static void Draw(void)
 
 	metaball[2].position.z = 15.0f + 10.0f * cosf(angle);
 
-
 	grid.Update(metaball , 3 , NULL);
 	grid.Draw(NULL);
-
-	/// Print text on screen
-//	int line = 1;
-//	int lineHeight = 18;
-//	camera.PrintText(0 , lineHeight * line++ ,
-//					 1.0f , 1.0f , 0.0f , 0.6f ,
-//					 "FPS: %d" , (int)fps);
-//	camera.PrintText(0, lineHeight * line++,
-//					 1.0f, 1.0f, 0.0f, 0.6f,
-//					 "Metaball polys: %d" , metaballPolys);
-
-	/// Update timer
-//	timer.Update ();
-//	timeElapsed = timer.GetDelta () / 1000.0f;
-
-//	CountFPS ();
-
-//	_DrawFrameBuffer();
-//	glutSwapBuffers();
 }
 
 extern "C" {

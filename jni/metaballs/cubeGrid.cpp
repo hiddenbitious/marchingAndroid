@@ -51,6 +51,9 @@ void C_CubeGrid::Constructor(float x, float y, float z)
 	position.z = z;
 
 	geometry = new grid_triangle[MAX_TRIANGLES];
+	if(geometry == NULL) {
+		LOGE("%s:%s Cannot allocate memory for metaballs!\n", __FILE__, __FUNCTION__);
+	}
 
 	nGridCubes = CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS;
 	nGridCubeVertices = (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1);
@@ -268,26 +271,23 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 		}
 	}
 
-#ifdef FIXED_PIPELINE
-	glPushMatrix();
-	glTranslatef(position.x , position.y , position.z);
-	glColor3f(1.0f , 1.0f , 1.0f);
-
-	glBegin(GL_TRIANGLES);
-	for(unsigned int i = 0 ; i < nTriangles ; i++) {
-		glNormal3f(geometry[i].normal0.x , geometry[i].normal0.y , geometry[i].normal0.z);
-		glVertex3f(geometry[i].vertex0.x , geometry[i].vertex0.y , geometry[i].vertex0.z);
-
-		glNormal3f(geometry[i].normal1.x , geometry[i].normal1.y , geometry[i].normal1.z);
-		glVertex3f(geometry[i].vertex1.x , geometry[i].vertex1.y , geometry[i].vertex1.z);
-
-		glNormal3f(geometry[i].normal2.x , geometry[i].normal2.y , geometry[i].normal2.z);
-		glVertex3f(geometry[i].vertex2.x , geometry[i].vertex2.y , geometry[i].vertex2.z);
+	LOGI("%s:%s: nTriangles: %d\n", __FILE__, __FUNCTION__, nTriangles);
+	LOGI("modelView matrix:\n");
+	for(int x = 0; x < 4; x++) {
+		for(int y = 0; y < 4; y++) {
+			LOGI("%f ", globalModelviewMatrix.m[x][y]);
+		}
+		LOGI("\n");
 	}
-	glEnd();
 
-	glPopMatrix();
-#else
+	LOGI("projection matrix:\n");
+	for(int x = 0; x < 4; x++) {
+		for(int y = 0; y < 4; y++) {
+			LOGI("%f ", globalProjectionMatrix.m[x][y]);
+		}
+		LOGI("\n");
+	}
+
 	shader->Begin();
 
 	/// Pass matrices to shader
@@ -313,7 +313,6 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 	glDrawArrays(GL_TRIANGLES, 0, nTriangles * 3);
 
 	shader->End();
-#endif
 
 	return nTriangles;
 }
