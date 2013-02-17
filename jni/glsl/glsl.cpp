@@ -28,6 +28,8 @@ bool glslAvailable = false;
 
 C_GLShaderObject::C_GLShaderObject(void)
 {
+	FUN_ENTRY
+
 	type = NO_SHADER;
 	shaderObject = 0;
 	isCompiled = false;
@@ -37,6 +39,8 @@ C_GLShaderObject::C_GLShaderObject(void)
 
 C_GLShaderObject::~C_GLShaderObject(void)
 {
+	FUN_ENTRY
+
 	if(shaderSource != NULL) {
 		delete[] shaderSource;
 	}
@@ -45,9 +49,7 @@ C_GLShaderObject::~C_GLShaderObject(void)
 		delete[] compilerLog;
 	}
 
-//	if(isCompiled) {
-//		glDeleteObject(shaderObject);
-//	}
+	glDeleteShader(shaderObject);
 }
 
 #ifndef JNI_COMPATIBLE
@@ -116,6 +118,8 @@ bool C_GLShaderObject::LoadShaderProgram(const char* filename)
 #else
 bool C_GLShaderObject::LoadShaderProgram(const char* shaderSource)
 {
+	FUN_ENTRY
+
 	int shaderSourceLength = strlen(shaderSource);
 
 	if(!shaderSourceLength)
@@ -139,6 +143,8 @@ bool C_GLShaderObject::LoadShaderProgram(const char* shaderSource)
 //-------------------------------------------------------------
 bool C_GLShaderObject::compile(bool printSource)
 {
+	FUN_ENTRY
+
 	if(!glslAvailable) {
 		return false;
 	}
@@ -172,6 +178,8 @@ bool C_GLShaderObject::compile(bool printSource)
 
 C_GLVertexShader::C_GLVertexShader(void)
 {
+	FUN_ENTRY
+
 	type = VERTEX_SHADER;
 
 	if(glslAvailable) {
@@ -181,10 +189,14 @@ C_GLVertexShader::C_GLVertexShader(void)
 
 C_GLVertexShader::~C_GLVertexShader(void)
 {
+	FUN_ENTRY
+
 }
 
 C_GLFragmentShader::C_GLFragmentShader(void)
 {
+	FUN_ENTRY
+
 	type = FRAGMENT_SHADER;
 
 	if(glslAvailable) {
@@ -194,12 +206,16 @@ C_GLFragmentShader::C_GLFragmentShader(void)
 
 C_GLFragmentShader::~C_GLFragmentShader(void)
 {
+	FUN_ENTRY
+
 }
 //-------------------------------------------------------------
 
 //-------------------------------------------------------------
 C_GLShader::C_GLShader(void)
 {
+	FUN_ENTRY
+
 	programObject = 0;
 	isLinked = false;
 	inUse = false;
@@ -213,6 +229,8 @@ C_GLShader::C_GLShader(void)
 //-------------------------------------------------------------
 C_GLShader::~C_GLShader(void)
 {
+	FUN_ENTRY
+
 	if(glslAvailable) {
 		for(unsigned int i = 0 ; i < nShaders ; i++) {
 			glDetachShader(programObject , shaderList[i]->shaderObject);
@@ -220,6 +238,8 @@ C_GLShader::~C_GLShader(void)
 		}
 		nShaders = 0;
 	}
+
+	glDeleteProgram(programObject);
 }
 //-------------------------------------------------------------
 
@@ -227,6 +247,8 @@ C_GLShader::~C_GLShader(void)
 
 void C_GLShader::AddShader(C_GLShaderObject* shader)
 {
+	FUN_ENTRY
+
 	if(!glslAvailable) {
 		return;
 	}
@@ -247,6 +269,8 @@ void C_GLShader::AddShader(C_GLShaderObject* shader)
 
 bool C_GLShader::Link(void)
 {
+	FUN_ENTRY
+
 	if(!glslAvailable || !nShaders) {
 		return false;
 	}
@@ -659,11 +683,23 @@ void C_GLShader::GetUniformiv(char* name, GLint* values)
 
 C_GLShaderManager::C_GLShaderManager(void)
 {
-	shaderList = NULL;
+	for(int i = 0; i < MAX_PROGRAMS; i++)
+		programList[i] = NULL;
+	nPrograms = 0;
+}
+
+void C_GLShaderManager::CleanUp()
+{
+	for(int i = 0; i < nPrograms; i++) {
+		delete programList[i];
+		programList[i] = NULL;
+	}
+	nPrograms = 0;
 }
 
 C_GLShaderManager::~C_GLShaderManager(void)
 {
+	CleanUp();
 }
 
 #ifndef JNI_COMPATIBLE
@@ -766,6 +802,8 @@ C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	C_GLVertexShader* tVertexShader;
 	C_GLFragmentShader* tFragmentShader;
 
+	CleanUp();
+
 	LOGI("\n***********************************************\n\n");
 	LOGI("Loading shader . . .\n");
 
@@ -851,10 +889,8 @@ C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	LOGI("done!\n");
 	LOGI("\n***********************************************\n\n");
 
-	if(!shaderList) {
-		delete shaderList;
-	}
-	shaderList = shaderObject;
+
+	programList[nPrograms++] = shaderObject;
 
 	return shaderObject;
 }

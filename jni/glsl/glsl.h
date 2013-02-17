@@ -18,7 +18,8 @@
 #define _GLSL_H_
 
 #include "../globals.h"
-#define MAX_SHADERS 2
+#define MAX_SHADERS 		2
+#define MAX_PROGRAMS		1
 
 #ifdef JNI_COMPATIBLE
 #	include <jni.h>
@@ -121,7 +122,7 @@ class C_GLShader {
 
 	private:
 		// Holds all the shaders
-		C_GLShaderObject* shaderList[MAX_SHADERS];
+		C_GLShaderObject *shaderList[MAX_SHADERS];
 		int nShaders;
 		GLuint programObject;
 		bool isLinked;
@@ -135,11 +136,14 @@ class C_GLShaderManager {
 		C_GLShaderManager();
 		~C_GLShaderManager();
 
+		void CleanUp();
+
 		// Load a vertex and a fragment shader and returns a pointer to a C_GLShader object that holds both
 		C_GLShader* LoadShaderProgram(const char *, const char *);
 
 	private:
-		C_GLShader* shaderList;
+		int nPrograms;
+		C_GLShader *programList[MAX_PROGRAMS];
 };
 
 //Initializes extensions using glew

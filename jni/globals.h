@@ -46,6 +46,8 @@
 #	include <GL/glew.h>
 #endif
 
+#define FUN_ENTRY	LOGI("%s:%s\n", __FILE__, __FUNCTION__);
+
 typedef unsigned long ULONG;
 typedef unsigned int UINT;
 typedef unsigned short USHORT;
