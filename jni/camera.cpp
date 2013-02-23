@@ -185,7 +185,7 @@ void C_Camera::setProjection(int w , int h)
 	esPerspective(&globalProjectionMatrix, fov, float(w) / float(h), zNear, zFar);
 }
 
-#ifndef JNI_COMPATIBLE
+#if 0
 void C_Camera::PrintText(int x , int y , float r , float g , float b, float a , const char *string , ...)
 {
 	if(!string || !strlen(string)) { return; }

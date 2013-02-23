@@ -17,33 +17,27 @@
 #ifndef _GLOBALS_H_
 #define _GLOBALS_H_
 
-#define JNI_COMPATIBLE
-//#define ENABLE_LOGGING
+#define ENABLE_LOGGING
 //#define ENABLE_TIMING
 
-#ifdef JNI_COMPATIBLE
-#	include <jni.h>
-#	include <android/log.h>
-#	include <GLES2/gl2.h>
-#	include <GLES2/gl2ext.h>
-
-#	ifdef ENABLE_LOGGING
-#		define 	LOG_TAG		"marchingJNI"
-#		define  LOGI(...)	__android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-#		define  LOGE(...)	__android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-#	else
-#		define  LOGI(...)
-#		define  LOGE(...)
+#ifdef ENABLE_TIMING
+#	ifndef ENABLE_LOGGING
+#		define ENABLE_LOGGING
 #	endif
-#else
-#	define  LOGI 		printf
-#	define  LOGE		printf
+#endif
 
-#	include <stdint.h>
-#	include <string>
-#	include <limits>
-#	include <assert.h>
-#	include <GL/glew.h>
+#include <jni.h>
+#include <android/log.h>
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+
+#ifdef ENABLE_LOGGING
+#	define 	LOG_TAG		"marchingJNI"
+#	define  LOGI(...)	__android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#	define  LOGE(...)	__android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#else
+#	define  LOGI(...)
+#	define  LOGE(...)
 #endif
 
 #define FUN_ENTRY	LOGI("%s:%s\n", __FILE__, __FUNCTION__);

@@ -23,7 +23,35 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="Android.mk" />
+		<Unit filename="bbox.cpp" />
+		<Unit filename="bbox.h" />
+		<Unit filename="bsphere.cpp" />
+		<Unit filename="bsphere.h" />
+		<Unit filename="bvolumes.h" />
+		<Unit filename="camera.cpp" />
+		<Unit filename="camera.h" />
+		<Unit filename="frustum.cpp" />
+		<Unit filename="frustum.h" />
+		<Unit filename="gl_code.cpp" />
+		<Unit filename="globals.h" />
+		<Unit filename="glsl/glsl.cpp" />
+		<Unit filename="glsl/glsl.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="metaballs/cubeGrid.cpp" />
+		<Unit filename="metaballs/cubeGrid.h" />
+		<Unit filename="metaballs/metaball.h" />
+		<Unit filename="metaballs/tables.h" />
+		<Unit filename="mmath.cpp" />
+		<Unit filename="mmath.h" />
+		<Unit filename="plane.cpp" />
+		<Unit filename="plane.h" />
+		<Unit filename="quaternion.cpp" />
+		<Unit filename="quaternion.h" />
+		<Unit filename="timer.cpp" />
+		<Unit filename="timer.h" />
+		<Unit filename="vectors.cpp" />
+		<Unit filename="vectors.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

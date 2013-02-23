@@ -18,21 +18,13 @@
 #define _GLSL_H_
 
 #include "../globals.h"
+#include <jni.h>
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+#include <string.h>
+
 #define MAX_SHADERS 		2
 #define MAX_PROGRAMS		1
-
-#ifdef JNI_COMPATIBLE
-#	include <jni.h>
-#	include <android/log.h>
-
-#	include <GLES2/gl2.h>
-#	include <GLES2/gl2ext.h>
-#else
-#	include <GL/glew.h>
-#	include <iostream>
-#endif
-
-#include <string.h>
 
 using namespace std;
 class C_GLShader;
@@ -55,7 +47,7 @@ class C_GLShaderObject {
 		// shader object
 		GLuint shaderObject;
 		shader_type_t type;
-		GLubyte* shaderSource;
+		GLubyte *shaderSource;
 		bool isCompiled;
 };
 
@@ -136,10 +128,11 @@ class C_GLShaderManager {
 		C_GLShaderManager();
 		~C_GLShaderManager();
 
+		/// Destroyes all shaders and frees resources
 		void CleanUp();
 
 		// Load a vertex and a fragment shader and returns a pointer to a C_GLShader object that holds both
-		C_GLShader* LoadShaderProgram(const char *, const char *);
+		C_GLShader *LoadShaderProgram(const char *, const char *);
 
 	private:
 		int nPrograms;
@@ -147,9 +140,7 @@ class C_GLShaderManager {
 };
 
 //Initializes extensions using glew
-//#ifndef JNI_COMPATIBLE
 bool InitGLExtensions(void);
-//#endif
 
 //Checks if glsl can be used
 bool CheckGLSL(void);

@@ -31,23 +31,13 @@
 #define FLOAT_EQ(x,v) (((v - EPSILON)<=x) && (x <=( v + EPSILON)))
 
 /// Numeric limts
-#ifndef JNI_COMPATIBLE
-#	include <limits>
-#	define FLT_MAX numeric_limits<float>::max()
-#	define FLT_MIN numeric_limits<float>::min()
-#	define INT_MAX numeric_limits<int>::min()
-#	define INT_MIN numeric_limits<int>::min()
-#	define UINT_MAX numeric_limits<unsigned int>::min()
-#	define UINT_MIN numeric_limits<unsigned int>::min()
-#else
-#	include <float.h>
+#include <float.h>
 //#	define FLT_MAX numeric_limits<float>::max()
 //#	define FLT_MIN numeric_limits<float>::min()
 //#	define INT_MAX numeric_limits<int>::min()
 //#	define INT_MIN numeric_limits<int>::min()
 //#	define UINT_MAX numeric_limits<unsigned int>::min()
 //#	define UINT_MIN numeric_limits<unsigned int>::min()
-#endif
 #define SMALLEST_FLOAT FLT_MIN
 #define GREATEST_FLOAT FLT_MAX
 

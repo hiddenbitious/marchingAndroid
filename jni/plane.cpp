@@ -15,9 +15,6 @@
 ****************************************/
 
 #include "plane.h"
-#ifndef JNI_COMPATIBLE
-#include <GL/glut.h>
-#endif
 
 C_Plane::C_Plane(float _a , float _b , float _c , float _d)
 {
@@ -149,7 +146,7 @@ float C_Plane::GetPlaneConstant(void)
 	return d;
 }
 
-#ifndef JNI_COMPATIBLE
+#if 0
 void C_Plane::Draw(void)
 {
 	glDisable(GL_TRIANGLES);

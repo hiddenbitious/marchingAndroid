@@ -124,104 +124,12 @@ void C_BBox::GetMin(float* x , float* y , float* z)
 
 void C_BBox::Draw(void)
 {
-#ifndef JNI_COMPATIBLE
-	glPolygonMode(GL_FRONT_AND_BACK , GL_LINE);
-	glDisable(GL_TEXTURE_2D);
-	glColor3f(1.0f , 1.0f , 1.0f);
-
-	glBegin(GL_QUADS);
-
-	//Bottom
-	glVertex3f(min.x , min.y , max.z);
-	glVertex3f(min.x , min.y , min.z);
-	glVertex3f(max.x , min.y , min.z);
-	glVertex3f(max.x , min.y , max.z);
-
-	//Top
-	glVertex3f(min.x , max.y , max.z);
-	glVertex3f(min.x , max.y , min.z);
-	glVertex3f(max.x , max.y , min.z);
-	glVertex3f(max.x , max.y , max.z);
-
-	//Left
-	glVertex3f(min.x , min.y , min.z);
-	glVertex3f(min.x , min.y , max.z);
-	glVertex3f(min.x , max.y , max.z);
-	glVertex3f(min.x , max.y , min.z);
-
-	//Right
-	glVertex3f(max.x , min.y , min.z);
-	glVertex3f(max.x , min.y , max.z);
-	glVertex3f(max.x , max.y , max.z);
-	glVertex3f(max.x , max.y , min.z);
-
-	//Front
-	glVertex3f(min.x , min.y , max.z);
-	glVertex3f(min.x , max.y , max.z);
-	glVertex3f(max.x , max.y , max.z);
-	glVertex3f(max.x , min.y , max.z);
-
-	//Back
-	glVertex3f(min.x , min.y , min.z);
-	glVertex3f(min.x , max.y , min.z);
-	glVertex3f(max.x , max.y , min.z);
-	glVertex3f(max.x , min.y , min.z);
-
-	glEnd();
-
-	glPolygonMode(GL_FRONT_AND_BACK , GL_FILL);
-#endif
+	/// Not implemended for gles 2
 }
 
 void C_BBox::Draw(float r , float g , float b)
 {
-#ifndef JNI_COMPATIBLE
-	glPolygonMode(GL_FRONT_AND_BACK , GL_LINE);
-	glDisable(GL_TEXTURE_2D);
-	glColor3f(r , g , b);
-
-	glBegin(GL_QUADS);
-
-	//Bottom
-	glVertex3f(min.x , min.y , max.z);
-	glVertex3f(min.x , min.y , min.z);
-	glVertex3f(max.x , min.y , min.z);
-	glVertex3f(max.x , min.y , max.z);
-
-	//Top
-	glVertex3f(min.x , max.y , max.z);
-	glVertex3f(min.x , max.y , min.z);
-	glVertex3f(max.x , max.y , min.z);
-	glVertex3f(max.x , max.y , max.z);
-
-	//Left
-	glVertex3f(min.x , min.y , min.z);
-	glVertex3f(min.x , min.y , max.z);
-	glVertex3f(min.x , max.y , max.z);
-	glVertex3f(min.x , max.y , min.z);
-
-	//Right
-	glVertex3f(max.x , min.y , min.z);
-	glVertex3f(max.x , min.y , max.z);
-	glVertex3f(max.x , max.y , max.z);
-	glVertex3f(max.x , max.y , min.z);
-
-	//Front
-	glVertex3f(min.x , min.y , max.z);
-	glVertex3f(min.x , max.y , max.z);
-	glVertex3f(max.x , max.y , max.z);
-	glVertex3f(max.x , min.y , max.z);
-
-	//Back
-	glVertex3f(min.x , min.y , min.z);
-	glVertex3f(min.x , max.y , min.z);
-	glVertex3f(max.x , max.y , min.z);
-	glVertex3f(max.x , min.y , min.z);
-
-	glEnd();
-
-	glPolygonMode(GL_FRONT_AND_BACK , GL_FILL);
-#endif
+	/// Not implemended for gles 2
 }
 
 void C_BBox::Translate(const float x, const float y, const float z)

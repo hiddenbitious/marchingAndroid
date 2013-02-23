@@ -49,7 +49,7 @@ void C_Frustum::calculateFrustum(void)
 	float modl[16];	// This will hold our modelview matrix
 	float clip[16];	// This will hold the clipping planes
 
-	#ifndef JNI_COMPATIBLE
+	#if 0
 	glGetFloatv(GL_PROJECTION_MATRIX, proj);
 	glGetFloatv(GL_MODELVIEW_MATRIX, modl);
 	#endif

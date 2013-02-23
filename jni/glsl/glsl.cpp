@@ -16,13 +16,6 @@
 
 #include "glsl.h"
 
-#define JNI_COMPATIBLE
-
-#ifndef JNI_COMPATIBLE
-#	include <fstream>
-#	include <assert.h>
-#endif
-
 bool extensions_init = false;
 bool glslAvailable = false;
 
@@ -43,79 +36,17 @@ C_GLShaderObject::~C_GLShaderObject(void)
 
 	if(shaderSource != NULL) {
 		delete[] shaderSource;
+		shaderSource = NULL;
 	}
 
 	if(compilerLog != NULL) {
 		delete[] compilerLog;
+		compilerLog = NULL;
 	}
 
 	glDeleteShader(shaderObject);
 }
 
-#ifndef JNI_COMPATIBLE
-static unsigned long getFileLength(ifstream& file)
-{
-	if(!file.good()) {
-		return 0;
-	}
-
-	file.seekg(0 , ios::end);
-	unsigned long len = file.tellg();
-	file.seekg(ios::beg);
-
-	return len;
-}
-#endif
-
-#ifndef JNI_COMPATIBLE
-bool C_GLShaderObject::LoadShaderProgram(const char* filename)
-{
-	ifstream file;
-	file.open(filename, ios::in);
-	if(!file) {
-		return false;
-	}
-
-	unsigned long len = getFileLength(file);
-
-	// "Empty File"
-	if(!len) {
-		return false;
-	}
-
-	// there is already a source loaded, free it!
-	if(shaderSource != NULL) {
-		delete[] shaderSource;
-	}
-
-	// can't reserve memory
-	shaderSource = (GLubyte*) new char[len + 1];
-	if(!shaderSource) {
-		return false;
-	}
-
-	// len isn't always strlen cause some characters are stripped in ascii read...
-	// it is important to 0-terminate the real length later, len is just max possible value...
-	shaderSource[len] = '\0';
-
-	unsigned int i = 0;
-	while(file.good()) {
-		shaderSource[i++] = file.get();
-
-		// coding guidelines...
-		if(i > len) {
-			i = len;
-		}
-	}
-
-	// 0 terminate it. Also delete the last char (255)
-	shaderSource[i - 1] = '\0';
-//	this->fileName = filename;
-	file.close();
-
-	return true;
-}
-#else
 bool C_GLShaderObject::LoadShaderProgram(const char* shaderSource)
 {
 	FUN_ENTRY
@@ -127,10 +58,12 @@ bool C_GLShaderObject::LoadShaderProgram(const char* shaderSource)
 
 	if(this->shaderSource) {
 		delete[] this->shaderSource;
+		this->shaderSource = NULL;
 	}
 
 	this->shaderSource = (GLubyte*) new char[shaderSourceLength + 1];
 	if(!this->shaderSource) {
+		LOGE("%s: Not enough memory.\n", __FUNCTION__);
 		return false;
 	}
 
@@ -139,21 +72,14 @@ bool C_GLShaderObject::LoadShaderProgram(const char* shaderSource)
 
 	return true;
 }
-#endif
+
 //-------------------------------------------------------------
 bool C_GLShaderObject::compile(bool printSource)
 {
 	FUN_ENTRY
 
-	if(!glslAvailable) {
+	if(!shaderSource)
 		return false;
-	}
-
-	#ifndef JNI_COMPATIBLE
-	if(printSource) {
-		cout << endl << endl << shaderSource << endl << endl;
-	}
-	#endif
 
 	LOGI("about to compile:\n");
 	LOGI("%s\n", shaderSource);
@@ -167,13 +93,14 @@ bool C_GLShaderObject::compile(bool printSource)
 	//Get log size
 	int logSize = 0;
 	glGetShaderiv(shaderObject , GL_INFO_LOG_LENGTH , &logSize);
-	compilerLog = new char[logSize];
-
-	glGetShaderInfoLog(shaderObject, logSize, NULL, compilerLog);
+	if(logSize) {
+		compilerLog = new char[logSize];
+		glGetShaderInfoLog(shaderObject, logSize, NULL, compilerLog);
+	}
 
 	isCompiled = true;
 
-	return (bool)!!success;
+	return (bool)success;
 }
 
 C_GLVertexShader::C_GLVertexShader(void)
@@ -181,16 +108,12 @@ C_GLVertexShader::C_GLVertexShader(void)
 	FUN_ENTRY
 
 	type = VERTEX_SHADER;
-
-	if(glslAvailable) {
-		shaderObject = glCreateShader(GL_VERTEX_SHADER);
-	}
+	shaderObject = glCreateShader(GL_VERTEX_SHADER);
 }
 
 C_GLVertexShader::~C_GLVertexShader(void)
 {
 	FUN_ENTRY
-
 }
 
 C_GLFragmentShader::C_GLFragmentShader(void)
@@ -198,16 +121,12 @@ C_GLFragmentShader::C_GLFragmentShader(void)
 	FUN_ENTRY
 
 	type = FRAGMENT_SHADER;
-
-	if(glslAvailable) {
-		shaderObject = glCreateShader(GL_FRAGMENT_SHADER);
-	}
+	shaderObject = glCreateShader(GL_FRAGMENT_SHADER);
 }
 
 C_GLFragmentShader::~C_GLFragmentShader(void)
 {
 	FUN_ENTRY
-
 }
 //-------------------------------------------------------------
 
@@ -222,36 +141,25 @@ C_GLShader::C_GLShader(void)
 	nShaders = 0;
 	linkerLog = NULL;
 
-	if(glslAvailable) {
-		programObject = glCreateProgram();
-	}
+	programObject = glCreateProgram();
 }
-//-------------------------------------------------------------
+
 C_GLShader::~C_GLShader(void)
 {
 	FUN_ENTRY
 
-	if(glslAvailable) {
-		for(unsigned int i = 0 ; i < nShaders ; i++) {
-			glDetachShader(programObject , shaderList[i]->shaderObject);
-			delete shaderList[i];
-		}
-		nShaders = 0;
+	for(unsigned int i = 0 ; i < nShaders ; i++) {
+		glDetachShader(programObject, shaderList[i]->shaderObject);
+		delete shaderList[i];
 	}
+	nShaders = 0;
 
 	glDeleteProgram(programObject);
 }
-//-------------------------------------------------------------
-
-//-------------------------------------------------------------
 
 void C_GLShader::AddShader(C_GLShaderObject* shader)
 {
 	FUN_ENTRY
-
-	if(!glslAvailable) {
-		return;
-	}
 
 	if(shader == NULL) {
 		return;
@@ -264,29 +172,24 @@ void C_GLShader::AddShader(C_GLShaderObject* shader)
 		}
 	}
 
-	shaderList[nShaders++] = shader;
+	shaderList[nShaders] = shader;
+	nShaders++;
 }
 
 bool C_GLShader::Link(void)
 {
 	FUN_ENTRY
 
-	if(!glslAvailable || !nShaders) {
-		return false;
-	}
-
-	int i;
-
 	if(isLinked) {
 		LOGI("Object program already linked. Attempting to link again.\n");
 
-		for(i = 0 ; i < nShaders; i++) {
+		for(int i = 0 ; i < nShaders; i++) {
 			glDetachShader(programObject , shaderList[i]->shaderObject);
 		}
 	}
 
-	// Attach all the shaders
-	for(i = 0 ; i < nShaders; i++) {
+	/// Attach all shaders again
+	for(int i = 0 ; i < nShaders; i++) {
 		glAttachShader(programObject , shaderList[i]->shaderObject);
 	}
 
@@ -303,9 +206,12 @@ bool C_GLShader::Link(void)
 		if(linkerLog) {
 			delete[] linkerLog;
 		}
-		linkerLog = new char[logSize];
 
-		glGetProgramInfoLog(programObject , logSize , NULL , linkerLog);
+		if(logSize) {
+			linkerLog = new char[logSize];
+			glGetProgramInfoLog(programObject , logSize , NULL , linkerLog);
+		}
+
 		return false;
 	}
 
@@ -315,33 +221,26 @@ bool C_GLShader::Link(void)
 
 void C_GLShader::Begin(void)
 {
-	if(!glslAvailable)	{ return; }
-	if(!programObject)	{ return; }
-	if(!isLinked) { return; }
-	if(inUse) { return; }
-
-	inUse = true;
+	if(!programObject || !isLinked || inUse) {
+		return;
+	}
 
 	glUseProgram(programObject);
+	inUse = true;
 }
 
 void C_GLShader::End(void)
 {
-	if(!glslAvailable)	{ return; }
-	if(!programObject)	{ return; }
-	if(!inUse) { return; }
-
-	inUse = false;
+	if(!inUse) {
+		return;
+	}
 
 	glUseProgram(0);
+	inUse = false;
 }
 
 GLenum C_GLShader::bindAttribLocation(const char *varname, const GLint position)
 {
-	if(!glslAvailable) {
-		return false;
-	}
-
 //	GLint numActiveAttribs;
 //	glGetProgramiv(programObject, GL_ACTIVE_ATTRIBUTES, &numActiveAttribs);
 //
@@ -366,17 +265,16 @@ GLenum C_GLShader::bindAttribLocation(const char *varname, const GLint position)
 
 GLint C_GLShader::getAttribLocation(const char *varname)
 {
-	if(!glslAvailable || !isLinked) {
+	if(!isLinked) {
 		return -2;
 	}
 
-	GLint tmp = glGetAttribLocation(programObject, varname);
-	return tmp;
+	return glGetAttribLocation(programObject, varname);
 }
 
 void C_GLShader::printAttribInfo(GLint attrib)
 {
-	if(!glslAvailable || attrib < 0)
+	if(attrib < 0)
 		return;
 
 	char name[64];
@@ -395,9 +293,6 @@ void C_GLShader::printAttribInfo(GLint attrib)
 
 bool C_GLShader::setUniform1f(char* varname, GLfloat v0)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -408,9 +303,6 @@ bool C_GLShader::setUniform1f(char* varname, GLfloat v0)
 
 bool C_GLShader::setUniform2f(char* varname, GLfloat v0, GLfloat v1)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//   if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -421,9 +313,6 @@ bool C_GLShader::setUniform2f(char* varname, GLfloat v0, GLfloat v1)
 
 bool C_GLShader::setUniform3f(char* varname, GLfloat v0, GLfloat v1, GLfloat v2)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -434,9 +323,6 @@ bool C_GLShader::setUniform3f(char* varname, GLfloat v0, GLfloat v1, GLfloat v2)
 
 bool C_GLShader::setUniform4f(char* varname, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -447,9 +333,6 @@ bool C_GLShader::setUniform4f(char* varname, GLfloat v0, GLfloat v1, GLfloat v2,
 
 bool C_GLShader::setUniform1i(char* varname, GLint v0)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -460,9 +343,6 @@ bool C_GLShader::setUniform1i(char* varname, GLint v0)
 
 bool C_GLShader::setUniform2i(char* varname, GLint v0, GLint v1)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -474,9 +354,6 @@ bool C_GLShader::setUniform2i(char* varname, GLint v0, GLint v1)
 
 bool C_GLShader::setUniform3i(char* varname, GLint v0, GLint v1, GLint v2)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -487,9 +364,6 @@ bool C_GLShader::setUniform3i(char* varname, GLint v0, GLint v1, GLint v2)
 
 bool C_GLShader::setUniform4i(char* varname, GLint v0, GLint v1, GLint v2, GLint v3)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -500,9 +374,6 @@ bool C_GLShader::setUniform4i(char* varname, GLint v0, GLint v1, GLint v2, GLint
 
 bool C_GLShader::setUniform1fv(char* varname, GLsizei count, GLfloat *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -513,9 +384,6 @@ bool C_GLShader::setUniform1fv(char* varname, GLsizei count, GLfloat *value)
 
 bool C_GLShader::setUniform2fv(char* varname, GLsizei count, GLfloat *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -526,9 +394,6 @@ bool C_GLShader::setUniform2fv(char* varname, GLsizei count, GLfloat *value)
 
 bool C_GLShader::setUniform3fv(char* varname, GLsizei count, GLfloat *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -539,9 +404,6 @@ bool C_GLShader::setUniform3fv(char* varname, GLsizei count, GLfloat *value)
 
 bool C_GLShader::setUniform4fv(char* varname, GLsizei count, GLfloat *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -552,9 +414,6 @@ bool C_GLShader::setUniform4fv(char* varname, GLsizei count, GLfloat *value)
 
 bool C_GLShader::setUniform1iv(char* varname, GLsizei count, GLint *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -565,9 +424,6 @@ bool C_GLShader::setUniform1iv(char* varname, GLsizei count, GLint *value)
 
 bool C_GLShader::setUniform2iv(char* varname, GLsizei count, GLint *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -578,9 +434,6 @@ bool C_GLShader::setUniform2iv(char* varname, GLsizei count, GLint *value)
 
 bool C_GLShader::setUniform3iv(char* varname, GLsizei count, GLint *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -591,9 +444,6 @@ bool C_GLShader::setUniform3iv(char* varname, GLsizei count, GLint *value)
 
 bool C_GLShader::setUniform4iv(char* varname, GLsizei count, GLint *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -604,9 +454,6 @@ bool C_GLShader::setUniform4iv(char* varname, GLsizei count, GLint *value)
 
 bool C_GLShader::setUniformMatrix2fv(char* varname, GLsizei count, GLboolean transpose, GLfloat *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -617,9 +464,6 @@ bool C_GLShader::setUniformMatrix2fv(char* varname, GLsizei count, GLboolean tra
 
 bool C_GLShader::setUniformMatrix3fv(char* varname, GLsizei count, GLboolean transpose, GLfloat *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -630,9 +474,6 @@ bool C_GLShader::setUniformMatrix3fv(char* varname, GLsizei count, GLboolean tra
 
 bool C_GLShader::setUniformMatrix4fv(const char* varname, GLsizei count, GLboolean transpose, GLfloat *value)
 {
-	if(!glslAvailable) { return false; }  // GLSL not available
-//    if (!_noshader) return true;
-
 	GLint loc = GetUniLoc(varname);
 	if(loc == -1) { return false; } // can't find variable
 
@@ -655,7 +496,6 @@ GLint C_GLShader::GetUniLoc(const GLchar *name)
 
 void C_GLShader::GetUniformfv(char* name, GLfloat* values)
 {
-	if(!glslAvailable) { return; }
 	GLint loc;
 
 	loc = glGetUniformLocation(programObject, name);
@@ -668,9 +508,6 @@ void C_GLShader::GetUniformfv(char* name, GLfloat* values)
 
 void C_GLShader::GetUniformiv(char* name, GLint* values)
 {
-	if(!glslAvailable) { return; }
-
-
 	GLint loc;
 
 	loc = glGetUniformLocation(programObject, name);
@@ -702,107 +539,11 @@ C_GLShaderManager::~C_GLShaderManager(void)
 	CleanUp();
 }
 
-#ifndef JNI_COMPATIBLE
-C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexFile , const char *fragmentFile)
+C_GLShader *C_GLShaderManager::LoadShaderProgram(const char *vertexSource , const char *fragmentSource)
 {
-	C_GLShader* shaderObject;
-	C_GLVertexShader* tVertexShader;
-	C_GLFragmentShader* tFragmentShader;
-
-	cout << "\n********************************************************************************\n\n";
-	cout << "Loading shader . . ." << endl;
-
-
-	// Load vertex shader
-	tVertexShader = new C_GLVertexShader();
-	shaderObject = new C_GLShader();
-//	cout << "----------------------------------------------------------" << endl;
-	cout << "Loading vertex shader from file:   \"" << vertexFile << "\" ... ";
-	if(!tVertexShader->LoadShaderProgram(vertexFile)) {
-		cout << "\nCan't load vertex shader file: \"" << vertexFile << "\"." << endl;
-		delete tVertexShader;
-		return shaderObject;
-	}
-	cout << "done!" << endl;
-
-	// Load fragment shader
-	tFragmentShader = new C_GLFragmentShader();
-//	cout << "----------------------------------------------------------" << endl;
-	cout << "Loading fragment shader from file: \"" << fragmentFile << "\" ... ";
-	if(!tFragmentShader->LoadShaderProgram(fragmentFile)) {
-		cout << "\nCan't load fragment shader file: " << fragmentFile << "." << endl;
-		delete tVertexShader;
-		delete tFragmentShader;
-		return shaderObject;
-	}
-	cout << "done!" << endl;
-
-	// Compile vertex shader
-//	cout << "----------------------------------------------------------" << endl;
-	cout << "Compiling vertex shader...";
-	if(!tVertexShader->compile(true)) {
-		cout << "Error compiling vertex shader in file: " << vertexFile << "\n\n";
-		cout << "Compiler log: " << endl;
-		cout << tVertexShader->compilerLog << endl;
-		delete tVertexShader;
-		delete tFragmentShader;
-		return shaderObject;
-	}
-	cout << "...done!" << endl;
-	if(strlen(tVertexShader->compilerLog)) {
-		cout << "Compiler log: " << endl;
-		cout << tVertexShader->compilerLog << endl;
-	}
-
-	// Compile fragment shader
-//	cout << "----------------------------------------------------------" << endl;
-	cout << "Compiling fragment shader...";
-	if(!tFragmentShader->compile(true)) {
-		cout << "Error compiling fragment shader in file: " << fragmentFile << "\n\n";
-		cout << "Compiler log: " << endl;
-		cout << tFragmentShader->compilerLog << endl;
-		delete tVertexShader;
-		delete tFragmentShader;
-		return shaderObject;
-	}
-	cout << "...done!" << endl;
-	if(strlen(tFragmentShader->compilerLog)) {
-		cout << "Compiler log: " << endl;
-		cout << tFragmentShader->compilerLog << endl;
-	}
-
-	// Add shaders to shader object
-	shaderObject->AddShader(tVertexShader);
-	shaderObject->AddShader(tFragmentShader);
-
-	// Link shader object
-//	cout << "----------------------------------------------------------" << endl;
-	cout << "Linking shaders into shader object...";
-	if(!shaderObject->Link()) {
-		cout << "\nError linking shader programs." << endl;
-		cout << shaderObject->linkerLog << "\n\n";
-		delete tVertexShader;
-		delete tFragmentShader;
-		return shaderObject;
-	}
-	cout << "done!" << endl;
-	cout << "\n********************************************************************************\n\n";
-//	shaderList.push_back(shaderObject);
-	if(!shaderList)
-		delete shaderList;
-	shaderList = shaderObject;
-
-
-	return shaderObject;
-}
-#else
-C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , const char *fragmentSource)
-{
-	C_GLShader* shaderObject;
-	C_GLVertexShader* tVertexShader;
-	C_GLFragmentShader* tFragmentShader;
-
-	CleanUp();
+	C_GLShader *shaderObject;
+	C_GLVertexShader *tVertexShader;
+	C_GLFragmentShader *tFragmentShader;
 
 	LOGI("\n***********************************************\n\n");
 	LOGI("Loading shader . . .\n");
@@ -810,6 +551,10 @@ C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	/// Load vertex shader
 	tVertexShader = new C_GLVertexShader();
 	shaderObject = new C_GLShader();
+	if(!tVertexShader || !shaderObject) {
+		LOGE("%s: Not enough memory.\n", __FUNCTION__);
+		return NULL;
+	}
 
 	LOGI("Loading vertex shader...\n");
 	if(!tVertexShader->LoadShaderProgram(vertexSource)) {
@@ -821,6 +566,10 @@ C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 
 	/// Load fragment shader
 	tFragmentShader = new C_GLFragmentShader();
+	if(!tFragmentShader) {
+		LOGE("%s: Not enough memory.\n", __FUNCTION__);
+		return NULL;
+	}
 
 	LOGI("Loading fragment shader\n");
 	if(!tFragmentShader->LoadShaderProgram(fragmentSource)) {
@@ -889,111 +638,13 @@ C_GLShader* C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	LOGI("done!\n");
 	LOGI("\n***********************************************\n\n");
 
-
 	programList[nPrograms++] = shaderObject;
 
 	return shaderObject;
 }
-#endif
 
-#ifndef JNI_COMPATIBLE
-bool InitGLExtensions(void)
-{
-	if(extensions_init) {
-		return true;
-	}
-
-	//Init GLEW
-	GLenum err = glewInit();
-	if(GLEW_OK != err) {
-		//Problem: glewInit failed, something is seriously wrong.
-		cout << "Error initizing GLEW." << endl << "Error: " << glewGetErrorString(err) << endl;
-		extensions_init = false;
-		return false;
-	} else {
-		cout << "GLEW initialized" << endl;
-	}
-
-	const GLubyte* oglVendor = glGetString(GL_VENDOR);
-	const GLubyte* renderer = glGetString(GL_RENDERER);
-	const GLubyte* oglVersion = glGetString(GL_VERSION);
-
-	cout << "OpenGL Version: " << oglVersion << endl;
-	cout << "OpenGL Vendor: " << oglVendor << endl;
-	cout << "Renderer: " << renderer << endl;
-
-	return true;
-}
-
-bool CheckGLSL(void)
-{
-	if(glslAvailable) {
-		return true;
-	}
-
-	glslAvailable = true;
-
-	cout << "\n\n";
-
-	if(GLEW_VERSION_4_1) {
-		cout << "OpenGL 4.1 is available!" << endl;
-	}else if(GLEW_VERSION_4_0) {
-		cout << "OpenGL 4.0 is available!" << endl;
-	} else if(GLEW_VERSION_3_3) {
-		cout << "OpenGL 3.3 is available!" << endl;
-	} else if(GLEW_VERSION_3_2) {
-		cout << "OpenGL 3.2 is available!" << endl;
-	} else if(GLEW_VERSION_3_1) {
-		cout << "OpenGL 3.1 is available!" << endl;
-	} else if(GLEW_VERSION_3_0) {
-		cout << "OpenGL 3.0 is available!" << endl;
-	} else if(GLEW_VERSION_2_1) {
-		cout << "OpenGL 2.1 is available!" << endl;
-	} else if(GLEW_VERSION_2_0) {
-		cout << "OpenGL 2.0 is available!" << endl;
-	} else if(GLEW_VERSION_1_5) {
-		cout << "OpenGL 1.5 core functions are available" << endl;
-	} else if(GLEW_VERSION_1_4) {
-		cout << "OpenGL 1.4 core functions are available" << endl;
-	} else if(GLEW_VERSION_1_3) {
-		cout << "OpenGL 1.3 core functions are available" << endl;
-	} else if(GLEW_VERSION_1_2) {
-		cout << "OpenGL 1.2 core functions are available" << endl;
-	}
-
-	if(GL_TRUE != glewGetExtension("GL_ARB_fragment_shader")) {
-		cout << "GL_ARB_fragment_shader extension is not available!";
-		glslAvailable = false;
-	} else {
-		cout << "GL_ARB_fragment_shader extension is available!" << endl;
-	}
-
-	if(GL_TRUE != glewGetExtension("GL_ARB_vertex_shader")) {
-		cout << "GL_ARB_vertex_shader extension is not available!" << endl;
-		glslAvailable = false;
-	} else {
-		cout << "GL_ARB_vertex_shader extension is available!" << endl;
-	}
-
-	if(GL_TRUE != glewGetExtension("GL_ARB_shader_objects")) {
-		cout << "GL_ARB_shader_objects extension is not available!" << endl;
-		glslAvailable = false;
-	} else {
-		cout << "GL_ARB_shader_objects extension is available!" << endl;
-	}
-
-	if(glslAvailable) {
-		cout << "OpenGL Shading Language is available!\n\n";
-	} else {
-		cout << "OpenGL Shading Language is not available :(\n\n";
-	}
-
-	return glslAvailable;
-}
-#else
 bool CheckGLSL(void)
 {
 	glslAvailable = true;
 	return true;
 }
-#endif

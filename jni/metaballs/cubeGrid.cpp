@@ -97,19 +97,14 @@ void C_CubeGrid::Constructor(float x, float y, float z)
 	}
 
 	/// Initialize shader
-	#ifndef FIXED_PIPELINE
-	#ifndef JNI_COMPATIBLE
-	shader = shaderManager.LoadShaderProgram("shaders/metaballs_shader.vert", "shaders/metaballs_shader.frag");
-	#else
 	shader = shaderManager.LoadShaderProgram(vertexShaderSource, fragmentShaderSource);
-	#endif
+
 	/// Get attribute locations
 	verticesAttribLocation = shader->getAttribLocation("a_vertices");
 	//assert(verticesAttribLocation >= 0);
 
 	normalsAttribLocation = shader->getAttribLocation("a_normals");
 	//assert(normalsAttribLocation >= 0);
-	#endif
 
 	bbox.SetMin(position.x , position.y , position.z);
 	bbox.SetMax(position.x + CUBES_PER_AXIS * CUBE_SIZE ,
@@ -117,7 +112,6 @@ void C_CubeGrid::Constructor(float x, float y, float z)
 				position.z + CUBES_PER_AXIS * CUBE_SIZE);
 	bbox.SetVertices();
 }
-
 
 void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 {

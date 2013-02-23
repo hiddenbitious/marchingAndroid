@@ -97,21 +97,6 @@ static void Initializations(GLint w , GLint h)
 	glCullFace(GL_BACK);
 
 	glEnable(GL_DEPTH_TEST);
-//	glShadeModel(GL_SMOOTH);
-
-	/// XXX: Disable normalizing ???
-//	glDisable(GL_NORMALIZE);
-//	glEnable(GL_LIGHTING);
-
-	/// Lighting parameters
-//	float ambient[] = { 1.0f , 1.0f , 1.0f , 1.0f };
-//	float diffuse[] = { 1.0f , 1.0f , 1.0f , 1.0f };
-//	float specular[] = { 1.0f , 1.0f , 1.0f , 1.0f };
-//	glLightfv(GL_LIGHT0 , GL_AMBIENT , ambient);
-//	glLightfv(GL_LIGHT0 , GL_DIFFUSE , diffuse);
-//	glLightfv(GL_LIGHT0 , GL_SPECULAR , specular);
-//
-//	glEnable(GL_LIGHT0);
 
 	// Enose tin camera me to frustum kai dose times gia tin proboli
 	camera.frustum = &frustum;
