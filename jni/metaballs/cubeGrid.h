@@ -33,7 +33,10 @@ struct grid_cube {
 
 class C_CubeGrid {
 public:
-	void Constructor(float x , float y , float z);
+	void Constructor();
+
+	C_CubeGrid(float x , float y , float z);
+	~C_CubeGrid();
 
 	/// Grid's position
 	C_Vertex position;

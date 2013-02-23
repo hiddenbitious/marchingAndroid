@@ -3,8 +3,6 @@
 #include "tables.h"
 #include "../mmath.h"
 
-//#define FIXED_PIPELINE
-
 C_GLShaderManager C_CubeGrid::shaderManager;
 
 struct grid_vertex {
@@ -44,16 +42,17 @@ inline float fieldFormula(float q , float r)
 	return q / r * 5;
 }
 
-void C_CubeGrid::Constructor(float x, float y, float z)
+C_CubeGrid::C_CubeGrid(float x, float y, float z)
 {
-	position.x = x;
-	position.y = y;
-	position.z = z;
-
 	geometry = new grid_triangle[MAX_TRIANGLES];
 	if(geometry == NULL) {
 		LOGE("%s:%s Cannot allocate memory for metaballs!\n", __FILE__, __FUNCTION__);
+		return;
 	}
+
+	position.x = x;
+	position.y = y;
+	position.z = z;
 
 	nGridCubes = CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS;
 	nGridCubeVertices = (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1);
@@ -96,21 +95,26 @@ void C_CubeGrid::Constructor(float x, float y, float z)
 		}
 	}
 
-	/// Initialize shader
-	shader = shaderManager.LoadShaderProgram(vertexShaderSource, fragmentShaderSource);
-
-	/// Get attribute locations
-	verticesAttribLocation = shader->getAttribLocation("a_vertices");
-	//assert(verticesAttribLocation >= 0);
-
-	normalsAttribLocation = shader->getAttribLocation("a_normals");
-	//assert(normalsAttribLocation >= 0);
-
 	bbox.SetMin(position.x , position.y , position.z);
 	bbox.SetMax(position.x + CUBES_PER_AXIS * CUBE_SIZE ,
 				position.y + CUBES_PER_AXIS * CUBE_SIZE ,
 				position.z + CUBES_PER_AXIS * CUBE_SIZE);
 	bbox.SetVertices();
+}
+
+C_CubeGrid::~C_CubeGrid()
+{
+	delete[] geometry;
+}
+
+void C_CubeGrid::Constructor()
+{
+	/// Initialize shader
+	shader = shaderManager.LoadShaderProgram(vertexShaderSource, fragmentShaderSource);
+
+	/// Get attribute locations
+	verticesAttribLocation = shader->getAttribLocation("a_vertices");
+	normalsAttribLocation = shader->getAttribLocation("a_normals");
 }
 
 void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)

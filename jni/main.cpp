@@ -73,7 +73,7 @@ static float timeElapsed = 0.2f;
 #endif
 
 /// Metaballs
-static C_CubeGrid grid;
+static C_CubeGrid grid(-20.0f , 0.0f , -80.0f);
 static C_Metaball metaball[3];
 
 // Sinartisi arhikpoiiseon
@@ -108,7 +108,7 @@ static void Initializations(GLint w , GLint h)
 //	basicShader_texture = shaderManager.LoadShaderProgram("basic_withSingleTexture.vert" , "basic_withSingleTexture.frag");
 
 	/// metaballs initialization
-	grid.Constructor(-20.0f , 0.0f , -80.0f);
+	grid.Constructor();
 
 	metaball[0].Constructor();
 	metaball[0].position.x = 10.0f;
@@ -149,21 +149,24 @@ static void Draw(void)
 	angle2 += .05f * timeElapsed;
 	if(angle2 >= 360.0f) { angle2 = 0.0f; }
 
+	float cos_angle = cosf(angle);
+	float cos_angle2 = cosf(angle2);
+
 	/// Clear buffers
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT );
 
 	esMatrixLoadIdentity(&globalModelviewMatrix);
 	camera.Look();
 	metaballPolys = 0;
 
 	/// Draw metaballs
-	metaball[0].position.y = 20.0f + 5 * cosf(angle2);
-	metaball[0].position.x = 20.0f + 10 * cosf(angle2);
+	metaball[0].position.y = 20.0f + 5 * cos_angle2;
+	metaball[0].position.x = 20.0f + 10 * cos_angle2;
 
-	metaball[1].position.x = 20.0f + 8.0f * cosf(angle);
-	metaball[1].position.z = 20.0f + 5.0f * cosf(angle);
+	metaball[1].position.x = 20.0f + 8.0f * cos_angle;
+	metaball[1].position.z = 20.0f + 5.0f * cos_angle;
 
-	metaball[2].position.z = 15.0f + 10.0f * cosf(angle);
+	metaball[2].position.z = 15.0f + 10.0f * cos_angle;
 
 	grid.Update(metaball , 3 , NULL);
 	grid.Draw(NULL);
