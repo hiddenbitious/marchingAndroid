@@ -17,7 +17,7 @@
 #ifndef _GLOBALS_H_
 #define _GLOBALS_H_
 
-#define ENABLE_LOGGING
+//#define ENABLE_LOGGING
 //#define ENABLE_TIMING
 
 #ifdef ENABLE_TIMING
@@ -29,7 +29,7 @@
 #include <jni.h>
 #include <android/log.h>
 #include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
+//#include <GLES2/gl2ext.h>
 
 #ifdef ENABLE_LOGGING
 #	define 	LOG_TAG		"marchingJNI"
@@ -40,7 +40,9 @@
 #	define  LOGE(...)
 #endif
 
-#define FUN_ENTRY	LOGI("%s:%s\n", __FILE__, __FUNCTION__);
+//#define FUN_ENTRY	LOGI("%s:%s\n", __FILE__, __FUNCTION__);
+#define FUN_ENTRY
+
 
 typedef unsigned long ULONG;
 typedef unsigned int UINT;

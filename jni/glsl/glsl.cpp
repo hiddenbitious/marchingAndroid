@@ -16,6 +16,9 @@
 
 #include "glsl.h"
 
+#undef FUN_ENTRY
+#define FUN_ENTRY
+
 bool extensions_init = false;
 bool glslAvailable = false;
 
@@ -81,8 +84,8 @@ bool C_GLShaderObject::compile(bool printSource)
 	if(!shaderSource)
 		return false;
 
-	LOGI("about to compile:\n");
-	LOGI("%s\n", shaderSource);
+//	LOGI("about to compile:\n");
+//	LOGI("%s\n", shaderSource);
 	glShaderSource(shaderObject , 1 , (const GLchar **)&shaderSource , NULL);
 
 	//Compile shader
@@ -93,6 +96,7 @@ bool C_GLShaderObject::compile(bool printSource)
 	//Get log size
 	int logSize = 0;
 	glGetShaderiv(shaderObject , GL_INFO_LOG_LENGTH , &logSize);
+	LOGI("success: %d, logSize: %d\n", success, logSize);
 	if(logSize) {
 		compilerLog = new char[logSize];
 		glGetShaderInfoLog(shaderObject, logSize, NULL, compilerLog);
@@ -545,7 +549,6 @@ C_GLShader *C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	C_GLVertexShader *tVertexShader;
 	C_GLFragmentShader *tFragmentShader;
 
-	LOGI("\n***********************************************\n\n");
 	LOGI("Loading shader . . .\n");
 
 	/// Load vertex shader
@@ -581,17 +584,21 @@ C_GLShader *C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	LOGI("done!\n");
 
 	/// Compile vertex shader
-	LOGI("Compiling vertex shader...\n");
+	LOGI("Compiling vertex shader... ");
 	if(!tVertexShader->compile(true)) {
-		LOGE("Error compiling vertex shader\n");
+		LOGE("\nError compiling vertex shader\n");
 		LOGE("Compiler log:\n");
-		if(tVertexShader->compilerLog)
+
+		if(tVertexShader->compilerLog) {
 			LOGE("%s\n", tVertexShader->compilerLog);
+		}
+
 		delete tVertexShader;
 		delete tFragmentShader;
+
 		return shaderObject;
 	}
-	LOGI("...done!\n");
+	LOGI("done!\n");
 //	if(tVertexShader->compilerLog) {
 //		LOGI("Compiler log: %s\n", tVertexShader->compilerLog);
 //		delete[] tVertexShader->compilerLog;
@@ -599,9 +606,9 @@ C_GLShader *C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 //	}
 
 	// Compile fragment shader
-	LOGI("Compiling fragment shader...\n");
+	LOGI("Compiling fragment shader... ");
 	if(!tFragmentShader->compile(true)) {
-		LOGE("Error compiling fragment shader\n");
+		LOGE("\nError compiling fragment shader\n");
 		LOGE("Compiler log:\n");
 		if(tFragmentShader->compilerLog)
 			LOGE("%s\n", tFragmentShader->compilerLog);
@@ -609,7 +616,7 @@ C_GLShader *C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 		delete tFragmentShader;
 		return shaderObject;
 	}
-	LOGI("...done!\n");
+	LOGI("done!\n");
 //	if(tFragmentShader->compilerLog) {
 //		LOGI("Compiler log: %s\n", tFragmentShader->compilerLog);
 //		delete[] tFragmentShader->compilerLog;
@@ -621,7 +628,7 @@ C_GLShader *C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 	shaderObject->AddShader(tFragmentShader);
 
 	/// Link shader object
-	LOGI("Linking shader objects...");
+	LOGI("Linking shader objects... ");
 	if(!shaderObject->Link()) {
 		LOGE("\nError linking shader programs.\n");
 		LOGE("Linker log:\n%s\n", shaderObject->linkerLog);
@@ -635,10 +642,10 @@ C_GLShader *C_GLShaderManager::LoadShaderProgram(const char *vertexSource , cons
 		shaderObject->linkerLog = NULL;
 	}
 
-	LOGI("done!\n");
-	LOGI("\n***********************************************\n\n");
+	LOGI(" done!\n");
 
-	programList[nPrograms++] = shaderObject;
+	programList[nPrograms] = shaderObject;
+	++nPrograms;
 
 	return shaderObject;
 }

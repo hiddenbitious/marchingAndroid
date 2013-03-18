@@ -5,6 +5,9 @@
 
 C_GLShaderManager C_CubeGrid::shaderManager;
 
+#define GRIDCUBE(x,y,z)			gridCubes[((x) * CUBES_PER_AXIS + (y)) * CUBES_PER_AXIS + (z)]
+#define GRIDCUBEVERTEX(x,y,z)	gridCubeVertices[((x) * VERTICES_PER_AXIS  + (y)) * VERTICES_PER_AXIS  + (z)]
+
 struct grid_vertex {
 	C_Vertex vertex;
 	C_Vertex normal;
@@ -58,39 +61,32 @@ C_CubeGrid::C_CubeGrid(float x, float y, float z)
 	nGridCubeVertices = (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1);
 	nTriangles = 0;
 
-	unsigned int cc = 0;
-
 	/// Initialize vertices
 	for(int x = 0 ; x < CUBES_PER_AXIS + 1 ; x++) {
 		for(int y = 0 ; y < CUBES_PER_AXIS + 1 ; y++) {
 			for(int z = 0 ; z < CUBES_PER_AXIS + 1 ; z++) {
-				gridCubeVertices[cc].position.x = x * CUBE_SIZE;
-				gridCubeVertices[cc].position.y = y * CUBE_SIZE;
-				gridCubeVertices[cc].position.z = z * CUBE_SIZE;
+				GRIDCUBEVERTEX(x,y,z).position.x = x * CUBE_SIZE;
+				GRIDCUBEVERTEX(x,y,z).position.y = y * CUBE_SIZE;
+				GRIDCUBEVERTEX(x,y,z).position.z = z * CUBE_SIZE;
 
-				gridCubeVertices[cc].value = 0.0f;
-
-				++cc;
+				GRIDCUBEVERTEX(x,y,z).value = 0.0f;
 			}
 		}
 	}
 
 	/// Initialize cubes by setting the pointers to the appropriate cube vertices
-	cc = 0;
 	for(int x = 0 ; x < CUBES_PER_AXIS ; x++) {
 		for(int y = 0 ; y < CUBES_PER_AXIS ; y++) {
 			for(int z = 0 ; z < CUBES_PER_AXIS ; z++) {
-				gridCubes[cc].vertices[0] = &gridCubeVertices[(x * (CUBES_PER_AXIS + 1) + y) * (CUBES_PER_AXIS + 1) + z];
-				gridCubes[cc].vertices[1] = &gridCubeVertices[(x * (CUBES_PER_AXIS + 1) + y) * (CUBES_PER_AXIS + 1) + z + 1];
-				gridCubes[cc].vertices[2] = &gridCubeVertices[(x * (CUBES_PER_AXIS + 1) + (y + 1)) * (CUBES_PER_AXIS + 1) + z + 1];
-				gridCubes[cc].vertices[3] = &gridCubeVertices[(x * (CUBES_PER_AXIS + 1) + (y + 1)) * (CUBES_PER_AXIS + 1) + z];
+				GRIDCUBE(x,y,z).vertices[0] = &GRIDCUBEVERTEX(x,y,z);
+				GRIDCUBE(x,y,z).vertices[1] = &GRIDCUBEVERTEX(x,y,z+1);
+				GRIDCUBE(x,y,z).vertices[2] = &GRIDCUBEVERTEX(x,y+1,z+1);
+				GRIDCUBE(x,y,z).vertices[3] = &GRIDCUBEVERTEX(x,y+1,z);
 
-				gridCubes[cc].vertices[4] = &gridCubeVertices[((x + 1) * (CUBES_PER_AXIS + 1) + y) * (CUBES_PER_AXIS + 1) + z];
-				gridCubes[cc].vertices[5] = &gridCubeVertices[((x + 1) * (CUBES_PER_AXIS + 1) + y) * (CUBES_PER_AXIS + 1) + z + 1];
-				gridCubes[cc].vertices[6] = &gridCubeVertices[((x + 1) * (CUBES_PER_AXIS + 1) + (y + 1)) * (CUBES_PER_AXIS + 1) + z + 1];
-				gridCubes[cc].vertices[7] = &gridCubeVertices[((x + 1) * (CUBES_PER_AXIS + 1) + (y + 1)) * (CUBES_PER_AXIS + 1) + z];
-
-				++cc;
+				GRIDCUBE(x,y,z).vertices[4] = &GRIDCUBEVERTEX(x+1,y,z);
+				GRIDCUBE(x,y,z).vertices[5] = &GRIDCUBEVERTEX(x+1,y,z+1);
+				GRIDCUBE(x,y,z).vertices[6] = &GRIDCUBEVERTEX(x+1,y+1,z+1);
+				GRIDCUBE(x,y,z).vertices[7] = &GRIDCUBEVERTEX(x+1,y+1,z);
 			}
 		}
 	}
@@ -117,6 +113,40 @@ void C_CubeGrid::Constructor()
 	normalsAttribLocation = shader->getAttribLocation("a_normals");
 }
 
+static grid_cube_t *cubesToInspect[CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS];
+
+static inline int findCubeFieldIntersections(struct grid_cube *cube)
+{
+	int cubeIndex = 0;
+
+	if(cube->vertices[0]->value < THRESHOLD) {
+			cubeIndex |= 1;
+		}
+		if(cube->vertices[1]->value < THRESHOLD) {
+			cubeIndex |= 2;
+		}
+		if(cube->vertices[2]->value < THRESHOLD) {
+			cubeIndex |= 4;
+		}
+		if(cube->vertices[3]->value < THRESHOLD) {
+			cubeIndex |= 8;
+		}
+		if(cube->vertices[4]->value < THRESHOLD) {
+			cubeIndex |= 16;
+		}
+		if(cube->vertices[5]->value < THRESHOLD) {
+			cubeIndex |= 32;
+		}
+		if(cube->vertices[6]->value < THRESHOLD) {
+			cubeIndex |= 64;
+		}
+		if(cube->vertices[7]->value < THRESHOLD) {
+			cubeIndex |= 128;
+		}
+
+	return cubeIndex;
+}
+
 void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 {
 	if(frustum != NULL) {
@@ -128,21 +158,29 @@ void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 	float rad, dist, normalScale;
 	C_Vertex pos;
 	C_Vertex ballToPoint;
+	int x, y, z;
+	unsigned int i;
 
 	/// Initialize
 	/// TODO: Replace loop with memset. Struct has to change
-	for(unsigned int i = 0 ; i < nGridCubeVertices ; i++) {
+	for(i = 0 ; i < nGridCubes; i++) {
+		gridCubeVertices[i].value = 0.0f;
+		gridCubeVertices[i].normal.x = gridCubeVertices[i].normal.y = gridCubeVertices[i].normal.z = 0.0f;
+		gridCubes[i].inspected = false;
+	}
+	for(; i < nGridCubeVertices; i++) {
 		gridCubeVertices[i].value = 0.0f;
 		gridCubeVertices[i].normal.x = gridCubeVertices[i].normal.y = gridCubeVertices[i].normal.z = 0.0f;
 	}
-	//memset ( gridCubeVertices , 0 , nGridCubeVertices * sizeof ( grid_cube_vertex ) );
+
+	memset(cubesToInspect, NULL, nGridCubes);
 
 	/// Calculate field values and norms for each grid vertex
-	for(int cb = 0 ; cb < nBalls ; cb++) {
+	for(int cb = 0; cb < nBalls; cb++) {
 		rad = metaballs[cb].radius;
 		pos.x = metaballs[cb].position.x; pos.y = metaballs[cb].position.y; pos.z = metaballs[cb].position.z;
 
-		for(unsigned int cv = 0 ; cv < nGridCubeVertices ; cv++) {
+		for(unsigned int cv = 0; cv < nGridCubeVertices; cv++) {
 			ballToPoint.x = gridCubeVertices[cv].position.x - pos.x;
 			ballToPoint.y = gridCubeVertices[cv].position.y - pos.y;
 			ballToPoint.z = gridCubeVertices[cv].position.z - pos.z;
@@ -167,36 +205,9 @@ void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 	// Gia kathe kibo...
 	nTriangles = 0;
 	for(unsigned int cb = 0; cb < nGridCubes && nTriangles < MAX_TRIANGLES; cb++) {
-		int cubeIndex = 0x00;
-
-		if(gridCubes[cb].vertices[0]->value < THRESHOLD) {
-			cubeIndex |= 1;
-		}
-		if(gridCubes[cb].vertices[1]->value < THRESHOLD) {
-			cubeIndex |= 2;
-		}
-		if(gridCubes[cb].vertices[2]->value < THRESHOLD) {
-			cubeIndex |= 4;
-		}
-		if(gridCubes[cb].vertices[3]->value < THRESHOLD) {
-			cubeIndex |= 8;
-		}
-		if(gridCubes[cb].vertices[4]->value < THRESHOLD) {
-			cubeIndex |= 16;
-		}
-		if(gridCubes[cb].vertices[5]->value < THRESHOLD) {
-			cubeIndex |= 32;
-		}
-		if(gridCubes[cb].vertices[6]->value < THRESHOLD) {
-			cubeIndex |= 64;
-		}
-		if(gridCubes[cb].vertices[7]->value < THRESHOLD) {
-			cubeIndex |= 128;
-		}
-
+		int cubeIndex = findCubeFieldIntersections(&gridCubes[cb]);
 		/// This look up table tells which of the cube's edges intersect with the field's surface
 		int usedEdges = edgeTable[cubeIndex];
-
 		/// if the cube is entirely within/outside surface, no faces are produced so move to the next cube
 		if(usedEdges == 0 || usedEdges == 255) {
 			continue;
@@ -288,15 +299,20 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 
 	shader->Begin();
 
-	/// Pass matrices to shader
-	/// Combine modelview and projection transformations
-	ESMatrix mat;
 	/// Transform
 	esTranslate(&globalModelviewMatrix, position.x , position.y , position.z);
-	/// Concatenate transforms
+
+	ESMatrix ESrotMatrix;
+	rotationQuaternion.QuaternionToMatrix16(&ESrotMatrix);
+	esMatrixMultiply(&globalModelviewMatrix, &ESrotMatrix, &globalModelviewMatrix);
+
+
+/// Concatenate transforms
+//	ESMatrix mat;
 //	esMatrixMultiply(&mat, &globalModelviewMatrix, &globalProjectionMatrix);
 //	shader->setUniformMatrix4fv("u_mvpMatrix", 1, GL_FALSE, &mat.m[0][0]);
 
+	/// Pass matrices to shader
 	shader->setUniformMatrix4fv("u_modelviewMatrix", 1, GL_FALSE, (GLfloat *)&globalModelviewMatrix.m[0][0]);
 	shader->setUniformMatrix4fv("u_projectionMatrix", 1, GL_FALSE, (GLfloat *)&globalProjectionMatrix.m[0][0]);
 
@@ -339,4 +355,12 @@ void C_CubeGrid::DrawGridCube(void)
 	if(culling) {
 		glEnable(GL_CULL_FACE);
 	}
+}
+
+void C_CubeGrid::Rotate(float anglex, float angley, float anglez)
+{
+	C_Quaternion tempQuat;
+	tempQuat.Rotate(anglex , angley , anglez);
+
+	rotationQuaternion.Mult(&tempQuat);
 }

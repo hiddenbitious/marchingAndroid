@@ -7,10 +7,11 @@
 #include "metaball.h"
 #include "../frustum.h"
 
-#define CUBES_PER_AXIS	30
-#define CUBE_SIZE		1.5f
-#define THRESHOLD		1.0f
-#define MAX_TRIANGLES	2000
+#define CUBES_PER_AXIS		30
+#define VERTICES_PER_AXIS 	(CUBES_PER_AXIS + 1)
+#define CUBE_SIZE			1.5f
+#define THRESHOLD			1.0f
+#define MAX_TRIANGLES		2000
 
 struct grid_triangle {
 	C_Vertex vertex0;
@@ -21,15 +22,16 @@ struct grid_triangle {
 	C_Vertex normal2;
 };
 
-struct grid_cube_vertex {
+typedef struct grid_cube_vertex {
 	float value;
 	C_Vertex position;
 	C_Vertex normal;
-};
+} grid_cube_vertex_t;
 
-struct grid_cube {
+typedef struct grid_cube {
 	grid_cube_vertex *vertices[8];
-};
+	bool inspected;
+} grid_cube_t;
 
 class C_CubeGrid {
 public:
@@ -40,12 +42,15 @@ public:
 
 	/// Grid's position
 	C_Vertex position;
+	/// Grid's rotation
+	C_Quaternion rotationQuaternion;
+
 	C_BBox bbox;
 
 	/// Number of triangles drawn
 	unsigned int nTriangles;
 
-	/// Array with all the cubes consisting the cube
+	/// Array with all the cubes consisting the grid
 	grid_cube gridCubes[CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS];
 	grid_cube_vertex gridCubeVertices[(CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1)];
 
@@ -57,6 +62,10 @@ public:
 
 	/// Updates ball positions
 	void Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum);
+
+	/// Transformations
+	void Rotate(float anglex, float angley, float anglez);
+	void Translate(float x, float y, float z);
 
 	/// Drawing functions
 	int Draw(C_Frustum *frustum);
