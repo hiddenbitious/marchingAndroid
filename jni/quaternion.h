@@ -89,6 +89,8 @@ class C_Quaternion {
 		void SetQuaternionY(float y);
 		void SetQuaternionZ(float z);
 		void SetQuaternionAngle(float angle);
+
+		void DumpQuat(void);
 };
 
 #endif

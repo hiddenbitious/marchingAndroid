@@ -39,13 +39,21 @@ static void checkGlError(const char* op) {
 	}
 }
 
+void DumpMatrix(ESMatrix *matrix)
+{
+	LOGI("\t\t%f %f %f %f", matrix->m[0][0], matrix->m[0][1], matrix->m[0][2], matrix->m[0][3]);
+	LOGI("\t\t%f %f %f %f", matrix->m[1][0], matrix->m[1][1], matrix->m[1][2], matrix->m[1][3]);
+	LOGI("\t\t%f %f %f %f", matrix->m[2][0], matrix->m[2][1], matrix->m[2][2], matrix->m[2][3]);
+	LOGI("\t\t%f %f %f %f", matrix->m[3][0], matrix->m[3][1], matrix->m[3][2], matrix->m[3][3]);
+}
+
 using namespace std;
 
 /// Globals
 ESMatrix globalModelviewMatrix, globalProjectionMatrix;
 
 /// Statics
-static C_Camera camera;
+//static C_Camera camera;
 static C_Frustum frustum;
 static int metaballPolys;
 static float speed, angle, angle2;
@@ -64,11 +72,11 @@ C_CubeGrid grid(-20.0f , 0.0f , -80.0f);
 typedef struct engine_t_ {
 	struct android_app* app;
 
-	ASensorManager* sensorManager;
-	const ASensor* accelerometerSensor;
-	ASensorEventQueue* sensorEventQueue;
+//	ASensorManager* sensorManager;
+//	const ASensor* accelerometerSensor;
+//	ASensorEventQueue* sensorEventQueue;
 
-	C_Camera camera;
+	C_Camera *camera;
 	C_Frustum frustum;
 
 	C_Metaball metaball[3];
@@ -120,16 +128,10 @@ static void printState(saved_state_t *state)
 	LOGI("\t: metaballPolys%d\n", metaballPolys);
 
 	LOGI("\tglobalProjectionMatrix:\n");
-	LOGI("\t\t%f %f %f %f", globalProjectionMatrix.m[0][0], globalProjectionMatrix.m[0][1], globalProjectionMatrix.m[0][2], globalProjectionMatrix.m[0][3]);
-	LOGI("\t\t%f %f %f %f", globalProjectionMatrix.m[1][0], globalProjectionMatrix.m[1][1], globalProjectionMatrix.m[1][2], globalProjectionMatrix.m[1][3]);
-	LOGI("\t\t%f %f %f %f", globalProjectionMatrix.m[2][0], globalProjectionMatrix.m[2][1], globalProjectionMatrix.m[2][2], globalProjectionMatrix.m[2][3]);
-	LOGI("\t\t%f %f %f %f", globalProjectionMatrix.m[3][0], globalProjectionMatrix.m[3][1], globalProjectionMatrix.m[3][2], globalProjectionMatrix.m[3][3]);
+	DumpMatrix(&globalProjectionMatrix);
 
 	LOGI("\tglobalModelviewMatrix:\n");
-	LOGI("\t\t%f %f %f %f", globalModelviewMatrix.m[0][0], globalModelviewMatrix.m[0][1], globalModelviewMatrix.m[0][2], globalModelviewMatrix.m[0][3]);
-	LOGI("\t\t%f %f %f %f", globalModelviewMatrix.m[1][0], globalModelviewMatrix.m[1][1], globalModelviewMatrix.m[1][2], globalModelviewMatrix.m[1][3]);
-	LOGI("\t\t%f %f %f %f", globalModelviewMatrix.m[2][0], globalModelviewMatrix.m[2][1], globalModelviewMatrix.m[2][2], globalModelviewMatrix.m[2][3]);
-	LOGI("\t\t%f %f %f %f", globalModelviewMatrix.m[3][0], globalModelviewMatrix.m[3][1], globalModelviewMatrix.m[3][2], globalModelviewMatrix.m[3][3]);
+	DumpMatrix(&globalModelviewMatrix);
 }
 
 /// Timer vars
@@ -177,11 +179,12 @@ static void Initializations(engine_t *engine)
 	glEnable(GL_DEPTH_TEST);
 
 	// Enose tin camera me to frustum kai dose times gia tin proboli
-	engine->camera.frustum = &frustum;
-	engine->camera.fov = 50.0f;
-	engine->camera.zFar = 200.0f;
-	engine->camera.zNear = 1.0f;
-   	engine->camera.setProjection(engine->width , engine->height);
+	engine->camera = new C_Camera();
+	engine->camera->frustum = &frustum;
+	engine->camera->fov = 50.0f;
+	engine->camera->zFar = 200.0f;
+	engine->camera->zNear = 1.0f;
+   	engine->camera->setProjection(engine->width , engine->height);
 	checkGlError("glViewport");
 
 	/// metaballs initialization
@@ -291,7 +294,7 @@ static void Draw(engine_t *engine)
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	esMatrixLoadIdentity(&globalModelviewMatrix);
-	engine->camera.Look();
+	engine->camera->Look();
 	metaballPolys = 0;
 
 	/// Draw metaballs
@@ -362,18 +365,41 @@ static void engine_terminate_display(engine_t *engine)
 /**
  * Process the next input event.
  */
+static float oldX = 0.0f;
+static float oldY = 0.0f;
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
-	FUN_ENTRY
-
 	engine_t * engine = (engine_t *)app->userData;
 
 	if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
-		engine->animating = true;
-//		engine->state.x = AMotionEvent_getX(event, 0);
-//		engine->state.y = AMotionEvent_getY(event, 0);
+		size_t pointerCount = AMotionEvent_getPointerCount(event);
+		for (size_t i = 0; i < pointerCount; ++i) {
+			LOGI("Received motion event from pointer %zu: (%.2f, %.2f)", i, AMotionEvent_getX(event, i), AMotionEvent_getY(event, i));
+
+			float x = AMotionEvent_getX(event, i);
+			float y = AMotionEvent_getY(event, i);
+			float xx = 90.0f * ((float)engine->width - x) / (float)engine->width;
+			float yy = 90.0f * ((float)engine->height - y) / (float)engine->height;
+
+//			LOGI("x: %f y: %f\n", x - oldX, y - oldY);
+
+			if (oldY != yy || oldX != xx) {
+//				LOGI("Y rotation: %f\n", y - oldY);
+//				LOGI("X rotation: %f\n", x - oldX);
+//				engine->camera->Rotate (2.0f * (yy - oldY), 0.0f);
+//				engine->camera->Rotate (0.0f, 2.0f * (xx - oldX));
+
+				engine->camera->Rotate((xx - oldX), (yy - oldY));
+
+				oldY = yy;
+				oldX = xx;
+			}
+		}
 
 		return 1;
+	} else if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_KEY) {
+//		LOGI("Received key event: %d", AKeyEvent_getKeyCode(event));
+//		return 1;
 	}
 
 	return 0;
@@ -407,7 +433,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 			if (engine->app->window != NULL) {
 				engine_init_display(engine);
 				Initializations(engine);
-				engine->camera.setProjection(engine->width , engine->height);
+				engine->camera->setProjection(engine->width , engine->height);
 				printState(&engine->state);
 				Draw(engine);
 			}
@@ -420,19 +446,19 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 
 		case APP_CMD_GAINED_FOCUS:
 			// When our app gains focus, we start monitoring the accelerometer.
-			if (engine->accelerometerSensor != NULL) {
-				ASensorEventQueue_enableSensor(engine->sensorEventQueue, engine->accelerometerSensor);
-				// We'd like to get 60 events per second (in us).
-				ASensorEventQueue_setEventRate(engine->sensorEventQueue, engine->accelerometerSensor, (1000L/60)*1000);
-			}
+//			if (engine->accelerometerSensor != NULL) {
+//				ASensorEventQueue_enableSensor(engine->sensorEventQueue, engine->accelerometerSensor);
+//				// We'd like to get 60 events per second (in us).
+//				ASensorEventQueue_setEventRate(engine->sensorEventQueue, engine->accelerometerSensor, (1000L/60)*1000);
+//			}
 			break;
 
 		case APP_CMD_LOST_FOCUS:
 			// When our app loses focus, we stop monitoring the accelerometer.
 			// This is to avoid consuming battery while not being used.
-			if (engine->accelerometerSensor != NULL) {
-				ASensorEventQueue_disableSensor(engine->sensorEventQueue, engine->accelerometerSensor);
-			}
+//			if (engine->accelerometerSensor != NULL) {
+//				ASensorEventQueue_disableSensor(engine->sensorEventQueue, engine->accelerometerSensor);
+//			}
 
 			// Also stop animating.
 			engine->animating = false;
@@ -452,6 +478,7 @@ void android_main(struct android_app* state)
 
 	engine_t engine;
 	memset(&engine, 0, sizeof(engine_t));
+//	engine.camera->xVec.SetVector(1.0f, 0.0f, 0.0f);
 
 	// Make sure glue isn't stripped.
 	app_dummy();
@@ -462,9 +489,9 @@ void android_main(struct android_app* state)
 	engine.app = state;
 
 	/// Prepare to monitor accelerometer
-	engine.sensorManager = ASensorManager_getInstance();
-	engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager, ASENSOR_TYPE_ACCELEROMETER);
-	engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager, state->looper, LOOPER_ID_USER, NULL, NULL);
+//	engine.sensorManager = ASensorManager_getInstance();
+//	engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager, ASENSOR_TYPE_ACCELEROMETER);
+//	engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager, state->looper, LOOPER_ID_USER, NULL, NULL);
 
 	if (state->savedState != NULL) {
 //		LOGE("restoring...\n");
@@ -486,24 +513,24 @@ void android_main(struct android_app* state)
 		/// If not animating, we will block forever waiting for events.
 		/// If animating, we loop until all events are read, then continue
 		/// to draw the next frame of animation.
-		while ((ident = ALooper_pollAll(engine.animating ? 0 : -1, NULL, &events, (void**)&source)) >= 0) {
+		while ((ident = ALooper_pollAll(engine.animating ? 0 : -1, NULL, &events, (void **)&source)) >= 0) {
 			/// Process this event.
 			if (source != NULL) {
 				source->process(state, source);
 			}
 
 			/// If a sensor has data, process it now.
-			if (ident == LOOPER_ID_USER) {
-				if (engine.accelerometerSensor != NULL) {
-					ASensorEvent event;
-
-					while (ASensorEventQueue_getEvents(engine.sensorEventQueue,&event, 1) > 0) {
-//						LOGI("accelerometer: x=%f y=%f z=%f",
-//							  event.acceleration.x, event.acceleration.y,
-//							  event.acceleration.z);
-					}
-				}
-			}
+//			if (ident == LOOPER_ID_USER) {
+//				if (engine.accelerometerSensor != NULL) {
+//					ASensorEvent event;
+//
+////					while (ASensorEventQueue_getEvents(engine.sensorEventQueue,&event, 1) > 0) {
+////						LOGI("accelerometer: x=%f y=%f z=%f",
+////							  event.acceleration.x, event.acceleration.y,
+////							  event.acceleration.z);
+////					}
+//				}
+//			}
 
 			/// Check if we are exiting.
 			if (state->destroyRequested != 0) {

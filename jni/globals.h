@@ -79,11 +79,12 @@ typedef struct {
 
 extern ESMatrix globalModelviewMatrix, globalProjectionMatrix;
 
-
 class C_3DSReader;
 class C_Camera;
 class C_Quaternion;
 class vector2;
 class C_Vector3;
+
+void DumpMatrix(ESMatrix *matrix);
 
 #endif

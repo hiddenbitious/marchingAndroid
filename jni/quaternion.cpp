@@ -64,18 +64,18 @@ void C_Quaternion::Reverse(void)
 
 void C_Quaternion::Normalize(void)
 {
-	float magn = sqrt(this->x * this->x + this->y * this->y + this->z * this->z + this->a * this->a);
+	float magn = sqrt(x * x + y * y + z * z + a * a);
 
 	if(magn) {
-		this->x /= magn;
-		this->y /= magn;
-		this->z /= magn;
-		this->a /= magn;
+		x /= magn;
+		y /= magn;
+		z /= magn;
+		a /= magn;
 
-		LIMIT_RANGE(-1.0 , this->x , 1.0);
-		LIMIT_RANGE(-1.0 , this->y , 1.0);
-		LIMIT_RANGE(-1.0 , this->z , 1.0);
-		LIMIT_RANGE(-1.0 , this->a , 1.0);
+		LIMIT_RANGE(-1.0 , x , 1.0);
+		LIMIT_RANGE(-1.0 , y , 1.0);
+		LIMIT_RANGE(-1.0 , z , 1.0);
+		LIMIT_RANGE(-1.0 , a , 1.0);
 	}
 }
 
@@ -92,18 +92,18 @@ void C_Quaternion::Identity(void)
 // quat * (*this*)
 void C_Quaternion::Mult(const C_Quaternion* quat)
 {
-	float _a = quat->a * this->a - quat->x * this->x - quat->y * this->y - quat->z * this->z;
+	float _a = quat->a * a - quat->x * x - quat->y * y - quat->z * z;
 
-	float _x = quat->a * this->x + quat->x * this->a + quat->y * this->z - quat->z * this->y;
-	float _y = quat->a * this->y + quat->y * this->a + quat->z * this->x - quat->x * this->z;
-	float _z = quat->a * this->z + quat->z * this->a + quat->x * this->y - quat->y * this->x;
+	float _x = quat->a * x + quat->x * a + quat->y * z - quat->z * y;
+	float _y = quat->a * y + quat->y * a + quat->z * x - quat->x * z;
+	float _z = quat->a * z + quat->z * a + quat->x * y - quat->y * x;
 
-	this->a = _a;
-	this->x = _x;
-	this->y = _y;
-	this->z = _z;
+	a = _a;
+	x = _x;
+	y = _y;
+	z = _z;
 
-	this->Normalize();
+	Normalize();
 }
 
 
@@ -135,16 +135,16 @@ C_Quaternion* C_Quaternion::Mult(float x , float y , float z , float a)
 
 void C_Quaternion::QuaternionToAxisAngle(float& _x , float& _y , float& _z , float& _angle)
 {
-	_angle = 2.0f * (float) acos(this->a) * RADIANS_TO_DEGREES;
+	_angle = 2.0f * (float) acos(a) * RADIANS_TO_DEGREES;
 
 	//Both calculations will bear the same result...
 //	float tmp = sqrt ( 1.0f - (float) sin ( this->a / 2.0f ) );
 	float tmp = sqrt(x * x + y * y + z * z);
 
 	if(tmp) {
-		_x = this->x / tmp;
-		_y = this->y / tmp;
-		_z = this->z / tmp;
+		_x = x / tmp;
+		_y = y / tmp;
+		_z = z / tmp;
 
 		math::Normalize(&_x , &_y , &_z);
 	}
@@ -289,10 +289,9 @@ void C_Quaternion::Rotate(float angleX , float angleY)
 	//(q1*q2*q3)
 	q1.Mult(&q2);
 
-	//(*this*) * (q1*q2*q3)
+	// (*this*) * (q1*q2*q3)
 	this->Mult(&q1);
 }
-
 
 void C_Quaternion::EulerToQuat(const float x, const float y, const float z)
 {
@@ -476,3 +475,8 @@ void C_Quaternion::SetQuaternionY(float y)
 
 void C_Quaternion::SetQuaternionZ(float z)
 { this->z = z; }
+
+void C_Quaternion::DumpQuat(void)
+{
+	LOGI("quat: x: %f y: %f z: %f a: %f)\n", x, y, z, a);
+}

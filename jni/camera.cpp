@@ -59,7 +59,6 @@ void C_Camera::Look(void)
 //	revQ.QuaternionToMatrix16(rotMatrix);
 	rotationQuaternion.QuaternionToMatrix16(&ESrotMatrix);
 
-	if(rotation) rotation = false;
 	if(translation) translation = false;
 
 	//Rotate and then translate.
@@ -67,8 +66,15 @@ void C_Camera::Look(void)
 //	glMultMatrixf (rotMatrix);
 //	glTranslatef(-position.x, -position.y, -position.z);
 
+
 	esMatrixMultiply(&globalModelviewMatrix, &ESrotMatrix, &globalModelviewMatrix);
-	esTranslate(&globalModelviewMatrix, -position.x, -position.y, -position.z);
+	if(rotation) {
+		rotation = false;
+//		LOGI("ESrotMatrix:\n");
+//		DumpMatrix(&ESrotMatrix);
+	}
+//	esTranslate(&globalModelviewMatrix, -position.x, -position.y, -position.z);
+	esTranslate(&globalModelviewMatrix, -20.0f, 0.0f, -80.0f);
 
 	/*
 		//glMultMatrixf ( rotMatrix );
@@ -88,7 +94,7 @@ void C_Camera::Rotate(const float xRotation , const float yRotation)
 {
 	C_Quaternion qq , qy;
 
-	qy.Rotate(0.0 , yRotation , 0.0);
+	qy.Rotate(0.0f , yRotation , 0.0f);
 	qy.RotatePoint(&xVec);
 
 	qq.AxisAngleToQuaternion(xVec.x , xVec.y , xVec.z , xRotation);

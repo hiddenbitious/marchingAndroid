@@ -300,11 +300,11 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 	shader->Begin();
 
 	/// Transform
-	esTranslate(&globalModelviewMatrix, position.x , position.y , position.z);
+//	esTranslate(&globalModelviewMatrix, position.x , position.y , position.z);
 
-	ESMatrix ESrotMatrix;
-	rotationQuaternion.QuaternionToMatrix16(&ESrotMatrix);
-	esMatrixMultiply(&globalModelviewMatrix, &ESrotMatrix, &globalModelviewMatrix);
+//	ESMatrix ESrotMatrix;
+//	rotationQuaternion.QuaternionToMatrix16(&ESrotMatrix);
+//	esMatrixMultiply(&globalModelviewMatrix, &ESrotMatrix, &globalModelviewMatrix);
 
 
 /// Concatenate transforms
