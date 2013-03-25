@@ -174,8 +174,6 @@ static void Initializations(engine_t *engine)
 	glEnable(GL_CULL_FACE);
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
-//	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-//	glShadeModel(GL_SMOOTH);
 	glEnable(GL_DEPTH_TEST);
 
 	// Enose tin camera me to frustum kai dose times gia tin proboli
@@ -365,35 +363,38 @@ static void engine_terminate_display(engine_t *engine)
 /**
  * Process the next input event.
  */
-static float oldX = 0.0f;
-static float oldY = 0.0f;
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
+	static float old_x = 0.0f;
+	static float d_x = 0.0f;
+	static float old_y = 0.0f;
+	static float d_y = 0.0f;
+
 	engine_t * engine = (engine_t *)app->userData;
 
 	if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
 		size_t pointerCount = AMotionEvent_getPointerCount(event);
-		for (size_t i = 0; i < pointerCount; ++i) {
-			LOGI("Received motion event from pointer %zu: (%.2f, %.2f)", i, AMotionEvent_getX(event, i), AMotionEvent_getY(event, i));
 
+		for (size_t i = 0; i < pointerCount; ++i) {
+//			LOGI("Received motion event from pointer %zu: (%.2f, %.2f)", i, AMotionEvent_getX(event, i), AMotionEvent_getY(event, i));
 			float x = AMotionEvent_getX(event, i);
 			float y = AMotionEvent_getY(event, i);
-			float xx = 90.0f * ((float)engine->width - x) / (float)engine->width;
-			float yy = 90.0f * ((float)engine->height - y) / (float)engine->height;
 
-//			LOGI("x: %f y: %f\n", x - oldX, y - oldY);
+			if (d_x != 0.0f && d_y != 0.0f) {
+				d_x = old_x - x;
+				d_y = old_y - y;
+				float xx = 90.0f * d_x / (float)engine->width;
+				float yy = 90.0f * d_y / (float)engine->height;
 
-			if (oldY != yy || oldX != xx) {
-//				LOGI("Y rotation: %f\n", y - oldY);
-//				LOGI("X rotation: %f\n", x - oldX);
-//				engine->camera->Rotate (2.0f * (yy - oldY), 0.0f);
-//				engine->camera->Rotate (0.0f, 2.0f * (xx - oldX));
-
-				engine->camera->Rotate((xx - oldX), (yy - oldY));
-
-				oldY = yy;
-				oldX = xx;
+				LOGI("x: %3.1f y:%3.1f\n", xx, yy);
+				engine->camera->Rotate(yy, xx);
+			} else {
+				d_x = old_x - x;
+				d_y = old_y - y;
 			}
+
+			old_x = x;
+			old_y = y;
 		}
 
 		return 1;
