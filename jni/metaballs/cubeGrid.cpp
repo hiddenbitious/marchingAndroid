@@ -14,7 +14,6 @@ struct grid_vertex {
 	C_Vertex normal;
 };
 
-
 static const char vertexShaderSource [] = {
 "attribute vec4 a_vertices;\n\
 attribute vec4 a_normals;\n\
@@ -102,6 +101,7 @@ C_CubeGrid::C_CubeGrid(float x, float y, float z)
 C_CubeGrid::~C_CubeGrid()
 {
 	delete[] geometry;
+	shader->End();
 }
 
 void C_CubeGrid::Constructor()
@@ -112,40 +112,16 @@ void C_CubeGrid::Constructor()
 	/// Get attribute locations
 	verticesAttribLocation = shader->getAttribLocation("a_vertices");
 	normalsAttribLocation = shader->getAttribLocation("a_normals");
-}
 
-//static grid_cube_t *cubesToInspect[CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS];
+	shader->Begin();
 
-static inline int findCubeFieldIntersections(struct grid_cube *cube)
-{
-	int cubeIndex = 0;
+	/// Vertices
+	glEnableVertexAttribArray(verticesAttribLocation);
+	glVertexAttribPointer(verticesAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), geometry);
 
-	if(cube->vertices[0]->value < THRESHOLD) {
-			cubeIndex |= 1;
-		}
-		if(cube->vertices[1]->value < THRESHOLD) {
-			cubeIndex |= 2;
-		}
-		if(cube->vertices[2]->value < THRESHOLD) {
-			cubeIndex |= 4;
-		}
-		if(cube->vertices[3]->value < THRESHOLD) {
-			cubeIndex |= 8;
-		}
-		if(cube->vertices[4]->value < THRESHOLD) {
-			cubeIndex |= 16;
-		}
-		if(cube->vertices[5]->value < THRESHOLD) {
-			cubeIndex |= 32;
-		}
-		if(cube->vertices[6]->value < THRESHOLD) {
-			cubeIndex |= 64;
-		}
-		if(cube->vertices[7]->value < THRESHOLD) {
-			cubeIndex |= 128;
-		}
-
-	return cubeIndex;
+	/// Normals
+	glEnableVertexAttribArray(normalsAttribLocation);
+	glVertexAttribPointer(normalsAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), (char *)geometry + 3 * sizeof(float));
 }
 
 typedef struct {
@@ -180,12 +156,12 @@ static void *WorkerThread(void *ptr)
 		//normal = (r^2 * v)/d^4
 		float normalScale = rad / (dist * dist);
 
-		pthread_mutex_lock(&mutex);
+//		pthread_mutex_lock(&mutex);
 		grid->gridCubeVertices[cv].value += fieldFormula(rad, dist);
 		grid->gridCubeVertices[cv].normal.x += ballToPoint.x * normalScale;
 		grid->gridCubeVertices[cv].normal.y += ballToPoint.y * normalScale;
 		grid->gridCubeVertices[cv].normal.z += ballToPoint.z * normalScale;
-		pthread_mutex_unlock(&mutex);
+//		pthread_mutex_unlock(&mutex);
 	}
 
 	pthread_exit(NULL);
@@ -222,7 +198,18 @@ void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 	/// For each cube ...
 	nTriangles = 0;
 	for(unsigned int cb = 0; cb < nGridCubes && nTriangles < MAX_TRIANGLES; cb++) {
-		int cubeIndex = findCubeFieldIntersections(&gridCubes[cb]);
+		int cubeIndex = 0;
+		grid_cube *cube = &gridCubes[cb];
+
+		if(cube->vertices[0]->value < THRESHOLD) cubeIndex |= 1;
+		if(cube->vertices[1]->value < THRESHOLD) cubeIndex |= 2;
+		if(cube->vertices[2]->value < THRESHOLD) cubeIndex |= 4;
+		if(cube->vertices[3]->value < THRESHOLD) cubeIndex |= 8;
+		if(cube->vertices[4]->value < THRESHOLD) cubeIndex |= 16;
+		if(cube->vertices[5]->value < THRESHOLD) cubeIndex |= 32;
+		if(cube->vertices[6]->value < THRESHOLD) cubeIndex |= 64;
+		if(cube->vertices[7]->value < THRESHOLD) cubeIndex |= 128;
+
 		/// This look up table tells which of the cube's edges intersect with the field's surface
 		int usedEdges = edgeTable[cubeIndex];
 		/// if the cube is entirely within/outside surface, no faces are produced so move to the next cube
@@ -291,11 +278,11 @@ void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 
 int C_CubeGrid::Draw(C_Frustum *frustum)
 {
-	if(frustum != NULL) {
-		if(frustum->cubeInFrustum(&bbox) == false) {
-			return 0;
-		}
-	}
+//	if(frustum != NULL) {
+//		if(frustum->cubeInFrustum(&bbox) == false) {
+//			return 0;
+//		}
+//	}
 
 //	LOGI("%s:%s: nTriangles: %d\n", __FILE__, __FUNCTION__, nTriangles);
 //	LOGI("modelView matrix:\n");
@@ -314,7 +301,7 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 //		LOGI("\n");
 //	}
 
-	shader->Begin();
+//	shader->Begin();
 
 	/// Transform
 //	esTranslate(&globalModelviewMatrix, position.x , position.y , position.z);
@@ -333,17 +320,9 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 	shader->setUniformMatrix4fv("u_modelviewMatrix", 1, GL_FALSE, (GLfloat *)&globalModelviewMatrix.m[0][0]);
 	shader->setUniformMatrix4fv("u_projectionMatrix", 1, GL_FALSE, (GLfloat *)&globalProjectionMatrix.m[0][0]);
 
-	/// Vertices
-	glEnableVertexAttribArray(verticesAttribLocation);
-	glVertexAttribPointer(verticesAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), geometry);
-
-	/// Normals
-	glEnableVertexAttribArray(normalsAttribLocation);
-	glVertexAttribPointer(normalsAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), (char *)geometry + 3 * sizeof(float));
-
 	glDrawArrays(GL_TRIANGLES, 0, nTriangles * 3);
 
-	shader->End();
+//	shader->End();
 
 	return nTriangles;
 }
