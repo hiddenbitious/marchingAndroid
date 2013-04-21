@@ -1,4 +1,3 @@
-
 #include "cubeGrid.h"
 #include "tables.h"
 #include "../mmath.h"
@@ -45,10 +44,23 @@ inline float fieldFormula(float q , float r)
 	return q / r * 5;
 }
 
+typedef struct {
+	C_Metaball *metaball;
+	C_CubeGrid *grid;
+	int tid;
+} thread_data_t;
+
+static int nTriangles[MAX_THREADS];
+static pthread_t threads[MAX_THREADS];
+static thread_data_t thread_data[MAX_THREADS];
+
 C_CubeGrid::C_CubeGrid(float x, float y, float z)
 {
 	for(int i = 0; i < MAX_THREADS; i++) {
 		geometry[i] = new grid_triangle[MAX_TRIANGLES];
+
+		thread_data[i].grid = this;
+		thread_data[i].tid = i;
 	}
 
 	if(geometry == NULL) {
@@ -122,35 +134,31 @@ void C_CubeGrid::Constructor()
 
 	/// Vertices
 	glEnableVertexAttribArray(verticesAttribLocation);
-//	glVertexAttribPointer(verticesAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), geometry[0]);
 
 	/// Normals
 	glEnableVertexAttribArray(normalsAttribLocation);
-//	glVertexAttribPointer(normalsAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), (char *)geometry[0] + 3 * sizeof(float));
 }
 
-typedef struct {
-	C_Metaball *metaball;
-	C_CubeGrid *grid;
-} thread_data_t;
-
-//pthread_mutex_t mutex;
+pthread_cond_t count_threshold_cv = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int count = 0;
 
 static void *WorkerThread(void *ptr)
 {
 	thread_data_t *td = (thread_data_t *) ptr;
 	C_Metaball *ball = td->metaball;
 	C_CubeGrid *grid = td->grid;
+	int tid = td->tid;
+	unsigned int cb;
 
 	C_Vertex pos, ballToPoint;
 	float rad = ball->radius;
 	pos.x = ball->position.x; pos.y = ball->position.y; pos.z = ball->position.z;
 
-	for(unsigned int cv = 0; cv < grid->nGridCubeVertices; cv++) {
-		ballToPoint.x = grid->gridCubeVertices[cv].position.x - pos.x;
-		ballToPoint.y = grid->gridCubeVertices[cv].position.y - pos.y;
-		ballToPoint.z = grid->gridCubeVertices[cv].position.z - pos.z;
+	for(cb = 0; cb < grid->nGridCubeVertices; cb++) {
+		ballToPoint.x = grid->gridCubeVertices[cb].position.x - pos.x;
+		ballToPoint.y = grid->gridCubeVertices[cb].position.y - pos.y;
+		ballToPoint.z = grid->gridCubeVertices[cb].position.z - pos.z;
 
 		float dist = ballToPoint.x * ballToPoint.x + ballToPoint.y * ballToPoint.y + ballToPoint.z * ballToPoint.z;
 
@@ -162,34 +170,31 @@ static void *WorkerThread(void *ptr)
 		float normalScale = rad / (dist * dist);
 
 //		pthread_mutex_lock(&mutex);
-		grid->gridCubeVertices[cv].value += fieldFormula(rad, dist);
-		grid->gridCubeVertices[cv].normal.x += ballToPoint.x * normalScale;
-		grid->gridCubeVertices[cv].normal.y += ballToPoint.y * normalScale;
-		grid->gridCubeVertices[cv].normal.z += ballToPoint.z * normalScale;
+		grid->gridCubeVertices[cb].value += fieldFormula(rad, dist);
+		grid->gridCubeVertices[cb].normal.x += ballToPoint.x * normalScale;
+		grid->gridCubeVertices[cb].normal.y += ballToPoint.y * normalScale;
+		grid->gridCubeVertices[cb].normal.z += ballToPoint.z * normalScale;
 //		pthread_mutex_unlock(&mutex);
 	}
 
-	pthread_exit(NULL);
-}
+/// Synchronization point
+/// //////////////////////
+	pthread_mutex_lock(&mutex);
+	count++;
+	while(count < MAX_THREADS) {
+		pthread_cond_wait(&count_threshold_cv, &mutex);
+	}
 
-typedef struct {
-	C_CubeGrid *grid;
-	int tid;
-} thread_data_geometry_t;
+	/// First to break free must release other threads
+	if(count == MAX_THREADS) {
+		pthread_cond_signal(&count_threshold_cv);
+	}
 
-int nTriangles[MAX_THREADS];
-
-static void *WorkerThread_geometry(void *ptr)
-{
-	thread_data_geometry_t *thread_data = (thread_data_geometry_t *)ptr;
-	C_CubeGrid *grid = thread_data->grid;
-	int tid = thread_data->tid;
+	pthread_mutex_unlock(&mutex);
+/// //////////////////////
 
 	nTriangles[tid] = 0;
-
-//	LOGI("%d: %d - %d\n", tid, tid * grid->nGridCubes / MAX_THREADS, (tid + 1) * grid->nGridCubes / MAX_THREADS);
-
-	for(unsigned int cb = tid * grid->nGridCubes / MAX_THREADS; cb < (tid + 1) * grid->nGridCubes / MAX_THREADS
+	for(cb = tid * grid->nGridCubes / MAX_THREADS; cb < (tid + 1) * grid->nGridCubes / MAX_THREADS
 														&& nTriangles[tid] < MAX_TRIANGLES; cb++) {
 		int cubeIndex = 0;
 		grid_cube *cube = &grid->gridCubes[cb];
@@ -268,22 +273,23 @@ static void *WorkerThread_geometry(void *ptr)
 		}
 	}
 
-//	LOGI("%d: %d\n", tid, nTriangles[tid]);
-
 	pthread_exit(NULL);
 }
 
 void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 {
-	pthread_t threads[MAX_THREADS];
-	pthread_t threads_geometry[MAX_THREADS];
-	thread_data_t thread_data[MAX_THREADS];
-	thread_data_geometry_t thread_data_geometry[MAX_THREADS];
-
 	int x, y, z, cb, ret;
 	float rad, dist, normalScale;
 	unsigned int i;
 	C_Vertex pos, ballToPoint;
+
+	/// Used for thread synchronization
+	count = 0;
+//	pthread_attr_t attr;
+//	pthread_mutex_init(&mutex, NULL);
+//	pthread_cond_init(&count_threshold_cv, NULL);
+//	pthread_attr_init(&attr);
+//	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
 	/// Initialize
 	for(i = 0 ; i < nGridCubeVertices; i++) {
@@ -293,7 +299,6 @@ void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 
 	/// Calculate field values and norms for each grid vertex
 	for(cb = 0; cb < MAX_THREADS; cb++) {
-		thread_data[cb].grid = this;
 		thread_data[cb].metaball = &metaballs[cb];
 		ret = pthread_create(&threads[cb], NULL, WorkerThread, (void *) &thread_data[cb]);
 	}
@@ -302,16 +307,8 @@ void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 		pthread_join(threads[cb], NULL);
 	}
 
-	/// For each cube ...
-	for(cb = 0; cb < MAX_THREADS; cb++) {
-		thread_data_geometry[cb].grid = this;
-		thread_data_geometry[cb].tid = cb;
-		pthread_create(&threads[cb], NULL, WorkerThread_geometry, (void *) &thread_data_geometry[cb]);
-	}
-
-	for(cb = 0; cb < MAX_THREADS; cb++) {
-		pthread_join(threads[cb], NULL);
-	}
+//	pthread_mutex_destroy(&mutex);
+//	pthread_cond_destroy(&count_threshold_cv);
 }
 
 int C_CubeGrid::Draw(C_Frustum *frustum)
