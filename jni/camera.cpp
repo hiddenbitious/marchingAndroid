@@ -74,7 +74,7 @@ void C_Camera::Look(void)
 //		DumpMatrix(&ESrotMatrix);
 	}
 //	esTranslate(&globalModelviewMatrix, -position.x, -position.y, -position.z);
-	esTranslate(&globalModelviewMatrix, -20.0f, 0.0f, -80.0f);
+	esTranslate(&globalModelviewMatrix, -20.0f, -20.0f, -80.0f);
 
 	/*
 		//glMultMatrixf ( rotMatrix );

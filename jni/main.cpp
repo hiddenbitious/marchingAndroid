@@ -304,7 +304,7 @@ static void Draw(engine_t *engine)
 
 	engine->metaball[2].position.z = 15.0f + 10.0f * cos_angle;
 
-	grid.Rotate(5.0f * timeElapsed, 0.0f, 0.0f);
+//	grid.Rotate(5.0f * timeElapsed, 0.0f, 0.0f);
 
 	grid.Update(engine->metaball, 3, NULL);
 	grid.Draw(NULL);
@@ -387,7 +387,9 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 				float yy = 90.0f * d_y / (float)engine->height;
 
 				LOGI("x: %3.1f y:%3.1f\n", xx, yy);
-				engine->camera->Rotate(yy, xx);
+//				engine->camera->Rotate(yy, xx);
+				grid.Rotate(2.0f * xx, 2.0f * yy, 0.0f);
+
 			} else {
 				d_x = old_x - x;
 				d_y = old_y - y;
