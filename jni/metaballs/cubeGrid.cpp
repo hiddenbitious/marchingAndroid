@@ -9,11 +9,6 @@ C_GLShaderManager C_CubeGrid::shaderManager;
 #define GRIDCUBE(x,y,z)			gridCubes[((x) * CUBES_PER_AXIS + (y)) * CUBES_PER_AXIS + (z)]
 #define GRIDCUBEVERTEX(x,y,z)	gridCubeVertices[((x) * VERTICES_PER_AXIS  + (y)) * VERTICES_PER_AXIS  + (z)]
 
-struct grid_vertex {
-	C_Vertex vertex;
-	C_Vertex normal;
-};
-
 static const char vertexShaderSource [] = {
 "attribute vec4 a_vertices;\n\
 attribute vec4 a_normals;\n\
@@ -38,7 +33,12 @@ void main (void)\n\
 	gl_FragColor = v_color;\n\
 }\0" };
 
-static grid_vertex edgeVertices[12];
+struct grid_vertex {
+	C_Vertex vertex;
+	C_Vertex normal;
+};
+
+static grid_vertex edgeVertices[MAX_THREADS][12];
 
 inline float fieldFormula(float q , float r)
 {
@@ -47,7 +47,10 @@ inline float fieldFormula(float q , float r)
 
 C_CubeGrid::C_CubeGrid(float x, float y, float z)
 {
-	geometry = new grid_triangle[MAX_TRIANGLES];
+	for(int i = 0; i < MAX_THREADS; i++) {
+		geometry[i] = new grid_triangle[MAX_TRIANGLES];
+	}
+
 	if(geometry == NULL) {
 		LOGE("%s:%s Cannot allocate memory for metaballs!\n", __FILE__, __FUNCTION__);
 		return;
@@ -59,7 +62,6 @@ C_CubeGrid::C_CubeGrid(float x, float y, float z)
 
 	nGridCubes = CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS;
 	nGridCubeVertices = (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1);
-	nTriangles = 0;
 
 	/// Initialize vertices
 	for(int x = 0 ; x < CUBES_PER_AXIS + 1 ; x++) {
@@ -100,7 +102,10 @@ C_CubeGrid::C_CubeGrid(float x, float y, float z)
 
 C_CubeGrid::~C_CubeGrid()
 {
-	delete[] geometry;
+	for(int i = 0; i < MAX_THREADS; i++) {
+		delete[] geometry[i];
+	}
+
 	shader->End();
 }
 
@@ -117,11 +122,11 @@ void C_CubeGrid::Constructor()
 
 	/// Vertices
 	glEnableVertexAttribArray(verticesAttribLocation);
-	glVertexAttribPointer(verticesAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), geometry);
+//	glVertexAttribPointer(verticesAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), geometry[0]);
 
 	/// Normals
 	glEnableVertexAttribArray(normalsAttribLocation);
-	glVertexAttribPointer(normalsAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), (char *)geometry + 3 * sizeof(float));
+//	glVertexAttribPointer(normalsAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), (char *)geometry[0] + 3 * sizeof(float));
 }
 
 typedef struct {
@@ -167,39 +172,27 @@ static void *WorkerThread(void *ptr)
 	pthread_exit(NULL);
 }
 
-void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
+typedef struct {
+	C_CubeGrid *grid;
+	int tid;
+} thread_data_geometry_t;
+
+int nTriangles[MAX_THREADS];
+
+static void *WorkerThread_geometry(void *ptr)
 {
-	pthread_t threads[3];
-	thread_data_t thread_data[3];
-//	pthread_mutex_init(&mutex, NULL);
+	thread_data_geometry_t *thread_data = (thread_data_geometry_t *)ptr;
+	C_CubeGrid *grid = thread_data->grid;
+	int tid = thread_data->tid;
 
-	int x, y, z, cb, ret;
-	float rad, dist, normalScale;
-	unsigned int i;
-	C_Vertex pos, ballToPoint;
+	nTriangles[tid] = 0;
 
-	/// Initialize
-	for(i = 0 ; i < nGridCubeVertices; i++) {
-		gridCubeVertices[i].value = 0.0f;
-		gridCubeVertices[i].normal.x = gridCubeVertices[i].normal.y = gridCubeVertices[i].normal.z = 0.0f;
-	}
+//	LOGI("%d: %d - %d\n", tid, tid * grid->nGridCubes / MAX_THREADS, (tid + 1) * grid->nGridCubes / MAX_THREADS);
 
-	/// Calculate field values and norms for each grid vertex
-	for(cb = 0; cb < nBalls; cb++) {
-		thread_data[cb].grid = this;
-		thread_data[cb].metaball = &metaballs[cb];
-		ret = pthread_create(&threads[cb], NULL, WorkerThread, (void *) &thread_data[cb]);
-	}
-
-	for(cb = 0; cb < nBalls; cb++) {
-		pthread_join(threads[cb], NULL);
-	}
-
-	/// For each cube ...
-	nTriangles = 0;
-	for(unsigned int cb = 0; cb < nGridCubes && nTriangles < MAX_TRIANGLES; cb++) {
+	for(unsigned int cb = tid * grid->nGridCubes / MAX_THREADS; cb < (tid + 1) * grid->nGridCubes / MAX_THREADS
+														&& nTriangles[tid] < MAX_TRIANGLES; cb++) {
 		int cubeIndex = 0;
-		grid_cube *cube = &gridCubes[cb];
+		grid_cube *cube = &grid->gridCubes[cb];
 
 		if(cube->vertices[0]->value < THRESHOLD) cubeIndex |= 1;
 		if(cube->vertices[1]->value < THRESHOLD) cubeIndex |= 2;
@@ -220,64 +213,110 @@ void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 		/// Interpolate vertex positions and normal vectors...
 		for(int currentEdge = 0; currentEdge < 12; currentEdge++) {
 			if(usedEdges && 1 << currentEdge) {
-				grid_cube_vertex *v1 = gridCubes[cb].vertices[verticesAtEndsOfEdges[currentEdge * 2    ]];
-				grid_cube_vertex *v2 = gridCubes[cb].vertices[verticesAtEndsOfEdges[currentEdge * 2 + 1]];
+				grid_cube_vertex *v1 = grid->gridCubes[cb].vertices[verticesAtEndsOfEdges[currentEdge * 2    ]];
+				grid_cube_vertex *v2 = grid->gridCubes[cb].vertices[verticesAtEndsOfEdges[currentEdge * 2 + 1]];
 
 				float delta = (THRESHOLD - v1->value) / (v2->value - v1->value);
 
-				edgeVertices[currentEdge].vertex.x = v1->position.x + delta * (v2->position.x - v1->position.x);
-				edgeVertices[currentEdge].vertex.y = v1->position.y + delta * (v2->position.y - v1->position.y);
-				edgeVertices[currentEdge].vertex.z = v1->position.z + delta * (v2->position.z - v1->position.z);
+				edgeVertices[tid][currentEdge].vertex.x = v1->position.x + delta * (v2->position.x - v1->position.x);
+				edgeVertices[tid][currentEdge].vertex.y = v1->position.y + delta * (v2->position.y - v1->position.y);
+				edgeVertices[tid][currentEdge].vertex.z = v1->position.z + delta * (v2->position.z - v1->position.z);
 
-				edgeVertices[currentEdge].normal.x = v1->normal.x + delta * (v2->normal.x - v1->normal.x);
-				edgeVertices[currentEdge].normal.y = v1->normal.y + delta * (v2->normal.y - v1->normal.y);
-				edgeVertices[currentEdge].normal.z = v1->normal.z + delta * (v2->normal.z - v1->normal.z);
+				edgeVertices[tid][currentEdge].normal.x = v1->normal.x + delta * (v2->normal.x - v1->normal.x);
+				edgeVertices[tid][currentEdge].normal.y = v1->normal.y + delta * (v2->normal.y - v1->normal.y);
+				edgeVertices[tid][currentEdge].normal.z = v1->normal.z + delta * (v2->normal.z - v1->normal.z);
 			}
 		}
 
-		for(int k = 0; triTable[cubeIndex][k] != 127 && nTriangles < MAX_TRIANGLES; k += 3) {
-			geometry[nTriangles].vertex0.x = edgeVertices[triTable[cubeIndex][k  ]].vertex.x;
-			geometry[nTriangles].vertex0.y = edgeVertices[triTable[cubeIndex][k  ]].vertex.y;
-			geometry[nTriangles].vertex0.z = edgeVertices[triTable[cubeIndex][k  ]].vertex.z;
+		for(int k = 0; triTable[cubeIndex][k] != 127 && nTriangles[tid] < MAX_TRIANGLES; k += 3) {
+			grid->geometry[tid][nTriangles[tid]].vertex0.x = edgeVertices[tid][triTable[cubeIndex][k  ]].vertex.x;
+			grid->geometry[tid][nTriangles[tid]].vertex0.y = edgeVertices[tid][triTable[cubeIndex][k  ]].vertex.y;
+			grid->geometry[tid][nTriangles[tid]].vertex0.z = edgeVertices[tid][triTable[cubeIndex][k  ]].vertex.z;
 
-			geometry[nTriangles].normal0.x = edgeVertices[triTable[cubeIndex][k  ]].normal.x;
-			geometry[nTriangles].normal0.y = edgeVertices[triTable[cubeIndex][k  ]].normal.y;
-			geometry[nTriangles].normal0.z = edgeVertices[triTable[cubeIndex][k  ]].normal.z;
+			grid->geometry[tid][nTriangles[tid]].normal0.x = edgeVertices[tid][triTable[cubeIndex][k  ]].normal.x;
+			grid->geometry[tid][nTriangles[tid]].normal0.y = edgeVertices[tid][triTable[cubeIndex][k  ]].normal.y;
+			grid->geometry[tid][nTriangles[tid]].normal0.z = edgeVertices[tid][triTable[cubeIndex][k  ]].normal.z;
 
-			math::Normalize(&geometry[nTriangles].normal0.x,
-							&geometry[nTriangles].normal0.y,
-							&geometry[nTriangles].normal0.z);
+			math::Normalize(&grid->geometry[tid][nTriangles[tid]].normal0.x,
+							&grid->geometry[tid][nTriangles[tid]].normal0.y,
+							&grid->geometry[tid][nTriangles[tid]].normal0.z);
 			/// ----------
-			geometry[nTriangles].vertex1.x = edgeVertices[triTable[cubeIndex][k + 2]].vertex.x;
-			geometry[nTriangles].vertex1.y = edgeVertices[triTable[cubeIndex][k + 2]].vertex.y;
-			geometry[nTriangles].vertex1.z = edgeVertices[triTable[cubeIndex][k + 2]].vertex.z;
+			grid->geometry[tid][nTriangles[tid]].vertex1.x = edgeVertices[tid][triTable[cubeIndex][k + 2]].vertex.x;
+			grid->geometry[tid][nTriangles[tid]].vertex1.y = edgeVertices[tid][triTable[cubeIndex][k + 2]].vertex.y;
+			grid->geometry[tid][nTriangles[tid]].vertex1.z = edgeVertices[tid][triTable[cubeIndex][k + 2]].vertex.z;
 
-			geometry[nTriangles].normal1.x = edgeVertices[triTable[cubeIndex][k + 2]].normal.x;
-			geometry[nTriangles].normal1.y = edgeVertices[triTable[cubeIndex][k + 2]].normal.y;
-			geometry[nTriangles].normal1.z = edgeVertices[triTable[cubeIndex][k + 2]].normal.z;
+			grid->geometry[tid][nTriangles[tid]].normal1.x = edgeVertices[tid][triTable[cubeIndex][k + 2]].normal.x;
+			grid->geometry[tid][nTriangles[tid]].normal1.y = edgeVertices[tid][triTable[cubeIndex][k + 2]].normal.y;
+			grid->geometry[tid][nTriangles[tid]].normal1.z = edgeVertices[tid][triTable[cubeIndex][k + 2]].normal.z;
 
-			math::Normalize(&geometry[nTriangles].normal1.x,
-							&geometry[nTriangles].normal1.y,
-							&geometry[nTriangles].normal1.z);
+			math::Normalize(&grid->geometry[tid][nTriangles[tid]].normal1.x,
+							&grid->geometry[tid][nTriangles[tid]].normal1.y,
+							&grid->geometry[tid][nTriangles[tid]].normal1.z);
 			/// ----------
-			geometry[nTriangles].vertex2.x = edgeVertices[triTable[cubeIndex][k + 1]].vertex.x;
-			geometry[nTriangles].vertex2.y = edgeVertices[triTable[cubeIndex][k + 1]].vertex.y;
-			geometry[nTriangles].vertex2.z = edgeVertices[triTable[cubeIndex][k + 1]].vertex.z;
+			grid->geometry[tid][nTriangles[tid]].vertex2.x = edgeVertices[tid][triTable[cubeIndex][k + 1]].vertex.x;
+			grid->geometry[tid][nTriangles[tid]].vertex2.y = edgeVertices[tid][triTable[cubeIndex][k + 1]].vertex.y;
+			grid->geometry[tid][nTriangles[tid]].vertex2.z = edgeVertices[tid][triTable[cubeIndex][k + 1]].vertex.z;
 
-			geometry[nTriangles].normal2.x = edgeVertices[triTable[cubeIndex][k + 1]].normal.x;
-			geometry[nTriangles].normal2.y = edgeVertices[triTable[cubeIndex][k + 1]].normal.y;
-			geometry[nTriangles].normal2.z = edgeVertices[triTable[cubeIndex][k + 1]].normal.z;
+			grid->geometry[tid][nTriangles[tid]].normal2.x = edgeVertices[tid][triTable[cubeIndex][k + 1]].normal.x;
+			grid->geometry[tid][nTriangles[tid]].normal2.y = edgeVertices[tid][triTable[cubeIndex][k + 1]].normal.y;
+			grid->geometry[tid][nTriangles[tid]].normal2.z = edgeVertices[tid][triTable[cubeIndex][k + 1]].normal.z;
 
-			math::Normalize(&geometry[nTriangles].normal2.x,
-							&geometry[nTriangles].normal2.y,
-							&geometry[nTriangles].normal2.z);
-			nTriangles++;
+			math::Normalize(&grid->geometry[tid][nTriangles[tid]].normal2.x,
+							&grid->geometry[tid][nTriangles[tid]].normal2.y,
+							&grid->geometry[tid][nTriangles[tid]].normal2.z);
+			nTriangles[tid]++;
 		}
+	}
+
+//	LOGI("%d: %d\n", tid, nTriangles[tid]);
+
+	pthread_exit(NULL);
+}
+
+void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
+{
+	pthread_t threads[MAX_THREADS];
+	pthread_t threads_geometry[MAX_THREADS];
+	thread_data_t thread_data[MAX_THREADS];
+	thread_data_geometry_t thread_data_geometry[MAX_THREADS];
+
+	int x, y, z, cb, ret;
+	float rad, dist, normalScale;
+	unsigned int i;
+	C_Vertex pos, ballToPoint;
+
+	/// Initialize
+	for(i = 0 ; i < nGridCubeVertices; i++) {
+		gridCubeVertices[i].value = 0.0f;
+		gridCubeVertices[i].normal.x = gridCubeVertices[i].normal.y = gridCubeVertices[i].normal.z = 0.0f;
+	}
+
+	/// Calculate field values and norms for each grid vertex
+	for(cb = 0; cb < MAX_THREADS; cb++) {
+		thread_data[cb].grid = this;
+		thread_data[cb].metaball = &metaballs[cb];
+		ret = pthread_create(&threads[cb], NULL, WorkerThread, (void *) &thread_data[cb]);
+	}
+
+	for(cb = 0; cb < MAX_THREADS; cb++) {
+		pthread_join(threads[cb], NULL);
+	}
+
+	/// For each cube ...
+	for(cb = 0; cb < MAX_THREADS; cb++) {
+		thread_data_geometry[cb].grid = this;
+		thread_data_geometry[cb].tid = cb;
+		pthread_create(&threads[cb], NULL, WorkerThread_geometry, (void *) &thread_data_geometry[cb]);
+	}
+
+	for(cb = 0; cb < MAX_THREADS; cb++) {
+		pthread_join(threads[cb], NULL);
 	}
 }
 
 int C_CubeGrid::Draw(C_Frustum *frustum)
 {
+	int totalTriangles = 0;
 //	if(frustum != NULL) {
 //		if(frustum->cubeInFrustum(&bbox) == false) {
 //			return 0;
@@ -320,11 +359,19 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 	shader->setUniformMatrix4fv("u_modelviewMatrix", 1, GL_FALSE, (GLfloat *)&globalModelviewMatrix.m[0][0]);
 	shader->setUniformMatrix4fv("u_projectionMatrix", 1, GL_FALSE, (GLfloat *)&globalProjectionMatrix.m[0][0]);
 
-	glDrawArrays(GL_TRIANGLES, 0, nTriangles * 3);
+//	glDrawArrays(GL_TRIANGLES, 0, nTriangles * 3);
 
 //	shader->End();
 
-	return nTriangles;
+	for(int i = 0; i < MAX_THREADS; i++) {
+		glVertexAttribPointer(verticesAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), geometry[i]);
+		glVertexAttribPointer(normalsAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), (char *)geometry[i] + 3 * sizeof(float));
+
+		glDrawArrays(GL_TRIANGLES, 0, nTriangles[i] * 3);
+		totalTriangles += nTriangles[i];
+	}
+
+	return totalTriangles;
 }
 
 void C_CubeGrid::DrawGridCube(void)

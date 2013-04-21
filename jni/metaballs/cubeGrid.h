@@ -11,7 +11,7 @@
 #define VERTICES_PER_AXIS 	(CUBES_PER_AXIS + 1)
 #define CUBE_SIZE			1.5f
 #define THRESHOLD			1.0f
-#define MAX_TRIANGLES		2000
+#define MAX_TRIANGLES		1500
 
 struct grid_triangle {
 	C_Vertex vertex0;
@@ -47,7 +47,7 @@ public:
 	C_BBox bbox;
 
 	/// Number of triangles drawn
-	unsigned int nTriangles;
+//	unsigned int nTriangles;
 
 	/// Array with all the cubes consisting the grid
 	grid_cube gridCubes[CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS];
@@ -57,7 +57,7 @@ public:
 	unsigned int nGridCubeVertices;
 
 	/// Actual geometry
-	grid_triangle *geometry;
+	grid_triangle *geometry[MAX_THREADS];
 
 	/// Updates ball positions
 	void Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum);

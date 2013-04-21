@@ -17,6 +17,8 @@
 #ifndef _GLOBALS_H_
 #define _GLOBALS_H_
 
+#define MAX_THREADS			3
+
 //#define ENABLE_LOGGING
 //#define ENABLE_TIMING
 
