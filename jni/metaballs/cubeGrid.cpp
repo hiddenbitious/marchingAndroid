@@ -2,6 +2,7 @@
 #include "cubeGrid.h"
 #include "tables.h"
 #include "../mmath.h"
+#include <pthread.h>
 
 C_GLShaderManager C_CubeGrid::shaderManager;
 
@@ -113,7 +114,7 @@ void C_CubeGrid::Constructor()
 	normalsAttribLocation = shader->getAttribLocation("a_normals");
 }
 
-static grid_cube_t *cubesToInspect[CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS];
+//static grid_cube_t *cubesToInspect[CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS];
 
 static inline int findCubeFieldIntersections(struct grid_cube *cube)
 {
@@ -147,62 +148,78 @@ static inline int findCubeFieldIntersections(struct grid_cube *cube)
 	return cubeIndex;
 }
 
+typedef struct {
+	C_Metaball *metaball;
+	C_CubeGrid *grid;
+} thread_data_t;
+
+//pthread_mutex_t mutex;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void *WorkerThread(void *ptr)
+{
+	thread_data_t *td = (thread_data_t *) ptr;
+	C_Metaball *ball = td->metaball;
+	C_CubeGrid *grid = td->grid;
+
+	C_Vertex pos, ballToPoint;
+	float rad = ball->radius;
+	pos.x = ball->position.x; pos.y = ball->position.y; pos.z = ball->position.z;
+
+	for(unsigned int cv = 0; cv < grid->nGridCubeVertices; cv++) {
+		ballToPoint.x = grid->gridCubeVertices[cv].position.x - pos.x;
+		ballToPoint.y = grid->gridCubeVertices[cv].position.y - pos.y;
+		ballToPoint.z = grid->gridCubeVertices[cv].position.z - pos.z;
+
+		float dist = ballToPoint.x * ballToPoint.x + ballToPoint.y * ballToPoint.y + ballToPoint.z * ballToPoint.z;
+
+		if(dist < 0.0001f) {
+			dist = 0.0001f;
+		}
+
+		//normal = (r^2 * v)/d^4
+		float normalScale = rad / (dist * dist);
+
+		pthread_mutex_lock(&mutex);
+		grid->gridCubeVertices[cv].value += fieldFormula(rad, dist);
+		grid->gridCubeVertices[cv].normal.x += ballToPoint.x * normalScale;
+		grid->gridCubeVertices[cv].normal.y += ballToPoint.y * normalScale;
+		grid->gridCubeVertices[cv].normal.z += ballToPoint.z * normalScale;
+		pthread_mutex_unlock(&mutex);
+	}
+
+	pthread_exit(NULL);
+}
+
 void C_CubeGrid::Update(C_Metaball *metaballs , int nBalls , C_Frustum *frustum)
 {
-	if(frustum != NULL) {
-		if(!frustum->cubeInFrustum(&bbox)) {
-			return;
-		}
-	}
+	pthread_t threads[3];
+	thread_data_t thread_data[3];
+//	pthread_mutex_init(&mutex, NULL);
 
+	int x, y, z, cb, ret;
 	float rad, dist, normalScale;
-	C_Vertex pos;
-	C_Vertex ballToPoint;
-	int x, y, z;
 	unsigned int i;
+	C_Vertex pos, ballToPoint;
 
 	/// Initialize
-	/// TODO: Replace loop with memset. Struct has to change
-	for(i = 0 ; i < nGridCubes; i++) {
-		gridCubeVertices[i].value = 0.0f;
-		gridCubeVertices[i].normal.x = gridCubeVertices[i].normal.y = gridCubeVertices[i].normal.z = 0.0f;
-		gridCubes[i].inspected = false;
-	}
-	for(; i < nGridCubeVertices; i++) {
+	for(i = 0 ; i < nGridCubeVertices; i++) {
 		gridCubeVertices[i].value = 0.0f;
 		gridCubeVertices[i].normal.x = gridCubeVertices[i].normal.y = gridCubeVertices[i].normal.z = 0.0f;
 	}
-
-	memset(cubesToInspect, NULL, nGridCubes);
 
 	/// Calculate field values and norms for each grid vertex
-	for(int cb = 0; cb < nBalls; cb++) {
-		rad = metaballs[cb].radius;
-		pos.x = metaballs[cb].position.x; pos.y = metaballs[cb].position.y; pos.z = metaballs[cb].position.z;
-
-		for(unsigned int cv = 0; cv < nGridCubeVertices; cv++) {
-			ballToPoint.x = gridCubeVertices[cv].position.x - pos.x;
-			ballToPoint.y = gridCubeVertices[cv].position.y - pos.y;
-			ballToPoint.z = gridCubeVertices[cv].position.z - pos.z;
-
-			dist = ballToPoint.x * ballToPoint.x + ballToPoint.y * ballToPoint.y + ballToPoint.z * ballToPoint.z;
-
-			if(dist < 0.0001f) {
-				dist = 0.0001f;
-			}
-
-			gridCubeVertices[cv].value += fieldFormula(rad, dist);
-
-			//normal = (r^2 * v)/d^4
-			normalScale = rad / (dist * dist);
-
-			gridCubeVertices[cv].normal.x += ballToPoint.x * normalScale;
-			gridCubeVertices[cv].normal.y += ballToPoint.y * normalScale;
-			gridCubeVertices[cv].normal.z += ballToPoint.z * normalScale;
-		}
+	for(cb = 0; cb < nBalls; cb++) {
+		thread_data[cb].grid = this;
+		thread_data[cb].metaball = &metaballs[cb];
+		ret = pthread_create(&threads[cb], NULL, WorkerThread, (void *) &thread_data[cb]);
 	}
 
-	// Gia kathe kibo...
+	for(cb = 0; cb < nBalls; cb++) {
+		pthread_join(threads[cb], NULL);
+	}
+
+	/// For each cube ...
 	nTriangles = 0;
 	for(unsigned int cb = 0; cb < nGridCubes && nTriangles < MAX_TRIANGLES; cb++) {
 		int cubeIndex = findCubeFieldIntersections(&gridCubes[cb]);

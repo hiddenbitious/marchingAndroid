@@ -30,7 +30,6 @@ typedef struct grid_cube_vertex {
 
 typedef struct grid_cube {
 	grid_cube_vertex *vertices[8];
-	bool inspected;
 } grid_cube_t;
 
 class C_CubeGrid {

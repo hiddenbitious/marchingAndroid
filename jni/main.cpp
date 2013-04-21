@@ -381,8 +381,8 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 			float y = AMotionEvent_getY(event, i);
 
 			if (d_x != 0.0f && d_y != 0.0f) {
-				d_x = old_x - x;
-				d_y = old_y - y;
+				d_x = x - old_x;
+				d_y = y - old_y;
 				float xx = 90.0f * d_x / (float)engine->width;
 				float yy = 90.0f * d_y / (float)engine->height;
 
