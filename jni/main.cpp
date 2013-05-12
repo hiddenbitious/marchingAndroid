@@ -189,21 +189,21 @@ static void Initializations(engine_t *engine)
 	grid.Constructor();
 
 	engine->metaball[0].Constructor();
-	engine->metaball[0].position.x = 10.0f;
-	engine->metaball[0].position.y = 10.0f;
-	engine->metaball[0].position.z = 10.0f;
+	engine->metaball[0].position.x = gridCenter;
+	engine->metaball[0].position.y = gridCenter;
+	engine->metaball[0].position.z = gridCenter;
 	engine->metaball[0].radius = 5.0f;
 
 	engine->metaball[1].Constructor();
-	engine->metaball[1].position.x = 10.0f;
-	engine->metaball[1].position.y = 10.0f;
-	engine->metaball[1].position.z = 10.0f;
+	engine->metaball[1].position.x = gridCenter;
+	engine->metaball[1].position.y = gridCenter;
+	engine->metaball[1].position.z = gridCenter;
 	engine->metaball[1].radius = 8.0f;
 
 	engine->metaball[2].Constructor();
-	engine->metaball[2].position.x = 15.0f;
-	engine->metaball[2].position.y = 15.0f;
-	engine->metaball[2].position.z = 15.0f;
+	engine->metaball[2].position.x = gridCenter;
+	engine->metaball[2].position.y = gridCenter;
+	engine->metaball[2].position.z = gridCenter;
 	engine->metaball[2].radius = 3.0f;
 
 	/// timer initialization
@@ -296,13 +296,13 @@ static void Draw(engine_t *engine)
 	metaballPolys = 0;
 
 	/// Draw metaballs
-	engine->metaball[0].position.y = 20.0f + 5.0f * cos_angle2;
-	engine->metaball[0].position.x = 20.0f + 10.0f * cos_angle2;
+	engine->metaball[0].position.x = gridCenter + 3.0f * cos_angle;
+	engine->metaball[0].position.y = gridCenter + 2.0f * cos_angle;
 
-	engine->metaball[1].position.x = 20.0f + 8.0f * cos_angle;
-	engine->metaball[1].position.z = 20.0f + 5.0f * cos_angle;
+	engine->metaball[1].position.x = gridCenter + 3.0f * cos_angle2;
+	engine->metaball[1].position.y = gridCenter + 5.0f * cos_angle;
 
-	engine->metaball[2].position.z = 15.0f + 10.0f * cos_angle;
+	engine->metaball[2].position.z = gridCenter + 8.0f * cos_angle2;
 
 //	grid.Rotate(5.0f * timeElapsed, 0.0f, 0.0f);
 

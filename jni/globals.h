@@ -45,7 +45,6 @@
 //#define FUN_ENTRY	LOGI("%s:%s\n", __FILE__, __FUNCTION__);
 #define FUN_ENTRY
 
-
 typedef unsigned long ULONG;
 typedef unsigned int UINT;
 typedef unsigned short USHORT;
@@ -88,5 +87,7 @@ class vector2;
 class C_Vector3;
 
 void DumpMatrix(ESMatrix *matrix);
+
+extern const float gridCenter;
 
 #endif

@@ -4,6 +4,7 @@
 #include <pthread.h>
 
 C_GLShaderManager C_CubeGrid::shaderManager;
+const float gridCenter = (CUBES_PER_AXIS * CUBE_SIZE) / 2.0f;
 
 #define GRIDCUBE(x,y,z)			gridCubes[((x) * CUBES_PER_AXIS + (y)) * CUBES_PER_AXIS + (z)]
 #define GRIDCUBEVERTEX(x,y,z)	gridCubeVertices[((x) * VERTICES_PER_AXIS  + (y)) * VERTICES_PER_AXIS  + (z)]
@@ -344,9 +345,9 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 
 	ESMatrix ESrotMatrix;
 	rotationQuaternion.QuaternionToMatrix16(&ESrotMatrix);
-	esTranslate(&globalModelviewMatrix, 22.5f, 22.5f, 22.5f);
+	esTranslate(&globalModelviewMatrix, gridCenter, gridCenter, gridCenter);
 	esMatrixMultiply(&globalModelviewMatrix, &ESrotMatrix, &globalModelviewMatrix);
-	esTranslate(&globalModelviewMatrix, -22.5f, -22.5f, -22.5f);
+	esTranslate(&globalModelviewMatrix, -gridCenter, -gridCenter, -gridCenter);
 
 /// Concatenate transforms
 //	ESMatrix mat;

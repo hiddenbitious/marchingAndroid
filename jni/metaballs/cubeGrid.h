@@ -9,8 +9,8 @@
 
 #define CUBES_PER_AXIS		30
 #define VERTICES_PER_AXIS 	(CUBES_PER_AXIS + 1)
-#define CUBE_SIZE			1.5f
-#define THRESHOLD			1.0f
+#define CUBE_SIZE			1.0f
+#define THRESHOLD			3.0f
 #define MAX_TRIANGLES		1500
 
 struct grid_triangle {
