@@ -68,7 +68,7 @@ typedef struct saved_state_t_ {
 } saved_state_t;
 
 
-C_CubeGrid grid(-20.0f , 0.0f , -80.0f);
+C_CubeGrid grid(-gridCenter, -gridCenter, -120.0f);
 typedef struct engine_t_ {
 	struct android_app* app;
 

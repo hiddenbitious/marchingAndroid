@@ -15,6 +15,15 @@
 ****************************************/
 
 #include "bbox.h"
+#include <stdlib.h>
+
+C_BBox::C_BBox()
+{
+	/// Default constructor. Just set the default color (green)
+	for (int i = 0; i < 24; i++) {
+		colors[i].SetVector(0.0f, 1.0f, 0.0f);
+	}
+}
 
 void C_BBox::SetMax(const float x , const float y , const float z)
 {
@@ -51,6 +60,47 @@ void C_BBox::SetVertices(void)
 	vertices[5].SetVector(max.x, max.y, max.z);
 	vertices[6].SetVector(min.x, max.y, max.z);
 	vertices[7].SetVector(min.x, max.y, min.z);
+
+	constructDrawableVertices();
+}
+
+void C_BBox::constructDrawableVertices()
+{
+	drawable_vertices[0] = vertices[0];
+	drawable_vertices[1] = vertices[1];
+
+	drawable_vertices[2] = vertices[1];
+	drawable_vertices[3] = vertices[2];
+
+	drawable_vertices[4] = vertices[2];
+	drawable_vertices[5] = vertices[3];
+
+	drawable_vertices[6] = vertices[3];
+	drawable_vertices[7] = vertices[0];
+
+	drawable_vertices[8] = vertices[0];
+	drawable_vertices[9] = vertices[4];
+
+	drawable_vertices[10] = vertices[4];
+	drawable_vertices[11] = vertices[5];
+
+	drawable_vertices[12] = vertices[5];
+	drawable_vertices[13] = vertices[6];
+
+	drawable_vertices[14] = vertices[6];
+	drawable_vertices[15] = vertices[7];
+
+	drawable_vertices[16] = vertices[7];
+	drawable_vertices[17] = vertices[4];
+
+	drawable_vertices[18] = vertices[1];
+	drawable_vertices[19] = vertices[5];
+
+	drawable_vertices[20] = vertices[2];
+	drawable_vertices[21] = vertices[6];
+
+	drawable_vertices[22] = vertices[3];
+	drawable_vertices[23] = vertices[7];
 }
 
 void C_BBox::GetVertices(C_Vector3* _vertices) const
@@ -121,10 +171,26 @@ void C_BBox::GetMin(float* x , float* y , float* z)
 	*z = min.z;
 }
 
-
 void C_BBox::Draw(void)
 {
 	/// Not implemended for gles 2
+}
+
+void C_BBox::Draw(int vertexAttrib1, int vertexAttrib2, int vertexAttrib3)
+{
+	if(vertexAttrib1 >= 0) {
+		glVertexAttribPointer(vertexAttrib1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), drawable_vertices);
+	}
+
+	if(vertexAttrib2 >= 0) {
+		glVertexAttribPointer(vertexAttrib2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), colors);
+	}
+
+	if(vertexAttrib3 >= 0) {
+		glVertexAttribPointer(vertexAttrib3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
+	}
+
+	glDrawArrays(GL_LINES, 0, 24);
 }
 
 void C_BBox::Draw(float r , float g , float b)

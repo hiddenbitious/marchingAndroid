@@ -55,7 +55,7 @@ static int nTriangles[MAX_THREADS];
 static pthread_t threads[MAX_THREADS];
 static thread_data_t thread_data[MAX_THREADS];
 
-C_CubeGrid::C_CubeGrid(float x, float y, float z)
+C_CubeGrid::C_CubeGrid(float pos_x, float pos_y, float pos_z)
 {
 	for(int i = 0; i < MAX_THREADS; i++) {
 		geometry[i] = new grid_triangle[MAX_TRIANGLES];
@@ -69,9 +69,9 @@ C_CubeGrid::C_CubeGrid(float x, float y, float z)
 		return;
 	}
 
-	position.x = x;
-	position.y = y;
-	position.z = z;
+	position.x = pos_x;
+	position.y = pos_y;
+	position.z = pos_z;
 
 	nGridCubes = CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS;
 	nGridCubeVertices = (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1) * (CUBES_PER_AXIS + 1);
@@ -135,7 +135,6 @@ void C_CubeGrid::Constructor()
 
 	/// Vertices
 	glEnableVertexAttribArray(verticesAttribLocation);
-
 	/// Normals
 	glEnableVertexAttribArray(normalsAttribLocation);
 }
@@ -170,6 +169,7 @@ static void *WorkerThread(void *ptr)
 		//normal = (r^2 * v)/d^4
 		float normalScale = rad / (dist * dist);
 
+		/// XXX: There should be a mutex here
 //		pthread_mutex_lock(&mutex);
 		grid->gridCubeVertices[cb].value += fieldFormula(rad, dist);
 		grid->gridCubeVertices[cb].normal.x += ballToPoint.x * normalScale;
@@ -338,10 +338,12 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 //		LOGI("\n");
 //	}
 
-//	shader->Begin();
+	shader->setUniformMatrix4fv("u_modelviewMatrix", 1, GL_FALSE, (GLfloat *)&globalModelviewMatrix.m[0][0]);
+	shader->setUniformMatrix4fv("u_projectionMatrix", 1, GL_FALSE, (GLfloat *)&globalProjectionMatrix.m[0][0]);
+	bbox.Draw(verticesAttribLocation, normalsAttribLocation, -1);
 
 	/// Transform
-//	esTranslate(&globalModelviewMatrix, position.x , position.y , position.z);
+	esTranslate(&globalModelviewMatrix, position.x , position.y , position.z);
 
 	ESMatrix ESrotMatrix;
 	rotationQuaternion.QuaternionToMatrix16(&ESrotMatrix);
@@ -357,10 +359,6 @@ int C_CubeGrid::Draw(C_Frustum *frustum)
 	/// Pass matrices to shader
 	shader->setUniformMatrix4fv("u_modelviewMatrix", 1, GL_FALSE, (GLfloat *)&globalModelviewMatrix.m[0][0]);
 	shader->setUniformMatrix4fv("u_projectionMatrix", 1, GL_FALSE, (GLfloat *)&globalProjectionMatrix.m[0][0]);
-
-//	glDrawArrays(GL_TRIANGLES, 0, nTriangles * 3);
-
-//	shader->End();
 
 	for(int i = 0; i < MAX_THREADS; i++) {
 		glVertexAttribPointer(verticesAttribLocation, 3, GL_FLOAT, GL_FALSE, (3 + 3) * sizeof(float), geometry[i]);

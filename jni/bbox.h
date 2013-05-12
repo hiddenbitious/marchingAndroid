@@ -26,11 +26,17 @@ class C_BBox : C_BVolumes {
 		C_Vector3 max;
 
 		C_Vector3 vertices[8];
+		C_Vector3 drawable_vertices[24];
+		C_Vector3 colors[24];
+
+		void constructDrawableVertices(void);
 
 		float MaxOfEight(float n1 , float n2 , float n3 , float n4 , float n5 , float n6 , float n7 , float n8);
 		float MinOfEight(float n1 , float n2 , float n3 , float n4 , float n5 , float n6 , float n7 , float n8);
 
 	public:
+		/// Default constructor
+		C_BBox();
 
 		void SetMin(const float x , const float y , const float z);
 		void SetMin(const C_Vector3* vec);
@@ -52,6 +58,7 @@ class C_BBox : C_BVolumes {
 		void GetVertices(C_Vertex *verts) const;
 
 		void Draw(void);
+		void Draw(int vertexAttrib1, int vertexAttrib2, int vertexAttrib3);
 		void Draw(float r , float g , float b);
 
 		void Translate(const float x , const float y , const float z);
@@ -59,9 +66,7 @@ class C_BBox : C_BVolumes {
 
 		void Rotate(const float anglex , const float angley , const float anglez , const C_Vector3* rotPoint);
 
-
 		bool IsInside(const C_Vertex* point);
-
 };
 
 #endif
