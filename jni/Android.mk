@@ -16,11 +16,13 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
+APP_OPTIM		:= release
 LOCAL_MODULE    := marchingcubes
 LOCAL_CFLAGS    := -Werror -O3
 LOCAL_SRC_FILES := 	bbox.cpp vectors.cpp main.cpp camera.cpp frustum.cpp mmath.cpp plane.cpp\
-					quaternion.cpp glsl/glsl.cpp metaballs/cubeGrid.cpp timer.cpp
-LOCAL_LDLIBS    := -landroid -lEGL -llog -lGLESv2
+					quaternion.cpp glsl/glsl.cpp metaballs/cubeGrid.cpp timer.cpp\
+					bspTree.cpp bspNode.cpp bspHelperFunctions.cpp
+LOCAL_LDLIBS    := -landroid -lEGL -lGLESv2
 TARGET_ARCH		:= arm
 TARGET_ARCH_ABI	:= armeabi-v7a
 LOCAL_STATIC_LIBRARIES := android_native_app_glue

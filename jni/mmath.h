@@ -42,9 +42,9 @@
 #define GREATEST_FLOAT FLT_MAX
 
 /// limits a value to low and high
-#define LIMIT_RANGE(low, value, high)	{	if (value < low)	value = low;	else if(value > high)	value = high;	}
-#define UPPER_LIMIT (value , limit )		{ if ( value > limit ) value = limit; }
-#define ABS(value)		{	 if ( value < 0 )	value *= -1.0;	}
+#define LIMIT_RANGE(low, value, high)	{ if (value < low) value = low; else if(value > high) value = high;	}
+#define UPPER_LIMIT (value , limit )	{ if ( value > limit ) value = limit; }
+#define ABS(value)						((value) < 0.0f ? -1.0f * (value) : (value))
 
 namespace math {
 void Normalize(float* x , float* y , float* z);

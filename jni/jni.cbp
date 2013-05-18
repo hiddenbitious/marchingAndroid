@@ -24,8 +24,16 @@
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Unit filename="Android.mk" />
+		<Unit filename="array.hpp" />
 		<Unit filename="bbox.cpp" />
 		<Unit filename="bbox.h" />
+		<Unit filename="bspCommon.h" />
+		<Unit filename="bspHelperFunctions.cpp" />
+		<Unit filename="bspHelperFunctions.h" />
+		<Unit filename="bspNode.cpp" />
+		<Unit filename="bspNode.h" />
+		<Unit filename="bspTree.cpp" />
+		<Unit filename="bspTree.h" />
 		<Unit filename="bsphere.cpp" />
 		<Unit filename="bsphere.h" />
 		<Unit filename="bvolumes.h" />
