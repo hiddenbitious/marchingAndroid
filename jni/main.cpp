@@ -27,7 +27,6 @@
 #include "metaballs/cubeGrid.h"
 #include "metaballs/metaball.h"
 #include "mmath.h"
-#include "bspTree.h"
 
 using namespace std;
 
@@ -60,8 +59,6 @@ static int metaballPolys;
 static float speed, angle, angle2;
 static bool frustumCulling;
 C_CubeGrid grid(-gridCenter, -gridCenter, -120.0f);
-
-static C_BspTree tree(15);
 
 typedef struct saved_state_t_ {
 	float speed, angle, angle2;
@@ -203,9 +200,6 @@ static void Initializations(engine_t *engine)
 	engine->metaball[2].position.y = gridCenter;
 	engine->metaball[2].position.z = gridCenter;
 	engine->metaball[2].radius = 3.0f;
-
-	/// BSP tree
-	tree.ReadGeometryFile("/sdcard/properMap2.bsp");
 
 	/// timer initialization
 	#ifdef ENABLE_TIMING
