@@ -7,21 +7,33 @@
 
 template<class T> class C_Array {
 public:
-	size_t length;
-	size_t count;
-	size_t element;
-
+	/// Constructors
 	C_Array();
 	C_Array(int s);
+
+	/// Adds at the end of the vector
 	void push_back(const T & val);
+	/// Removes from the end of the vector
 	T pop_back();
-	T& operator[](int index);
-	void compactify();
-	unsigned int size();
+	/// Erases the requested element from the vector
 	void erase(int index);
 
+	/// Returns reference to requested element
+	T& operator[](int index);
+
+	/// Returns the number of elements in the vector
+	unsigned int size();
+	/// Returns the size of the storage space currently allocated for the vector
+	unsigned int capacity();
+
+	/// Makes size == capacity and frees the extra memory
+	void compactify();
+
 private:
-	T* data;
+	T* data;			/// Pointer to actual data
+	size_t length;		/// Number of elements allocated
+	size_t count;		/// Number of elements in vector
+	size_t element;		/// Size of each element in bytes
 };
 
 template <class T>
@@ -131,15 +143,7 @@ void C_Array<T>::erase(int index)
 		return;
 	}
 
-	/// Else we have to do the memmove...
-	/// Find the smallest memory transfer
-	if(index < count / 2) {
-		memmove(data + 1, data, index * element);
-		data += 1;
-	} else {
-		memmove(&data[index], &data[index + 1], (count - index - 1) * element);
-	}
-
 	--count;
+	memmove(&data[index], &data[index + 1], (count - index) * element);
 }
 #endif
