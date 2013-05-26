@@ -27,6 +27,9 @@
 #include "metaballs/cubeGrid.h"
 #include "metaballs/metaball.h"
 #include "mmath.h"
+#include "bspTree.h"
+
+using namespace std;
 
 static void printGLString(const char *name, GLenum s) {
 	const char *v = (const char *) glGetString(s);
@@ -47,8 +50,6 @@ void DumpMatrix(ESMatrix *matrix)
 	LOGI("\t\t%f %f %f %f", matrix->m[3][0], matrix->m[3][1], matrix->m[3][2], matrix->m[3][3]);
 }
 
-using namespace std;
-
 /// Globals
 ESMatrix globalModelviewMatrix, globalProjectionMatrix;
 
@@ -58,6 +59,9 @@ static C_Frustum frustum;
 static int metaballPolys;
 static float speed, angle, angle2;
 static bool frustumCulling;
+C_CubeGrid grid(-gridCenter, -gridCenter, -120.0f);
+
+static C_BspTree tree(15);
 
 typedef struct saved_state_t_ {
 	float speed, angle, angle2;
@@ -67,14 +71,8 @@ typedef struct saved_state_t_ {
 	bool firstExecution;
 } saved_state_t;
 
-
-C_CubeGrid grid(-gridCenter, -gridCenter, -120.0f);
 typedef struct engine_t_ {
 	struct android_app* app;
-
-//	ASensorManager* sensorManager;
-//	const ASensor* accelerometerSensor;
-//	ASensorEventQueue* sensorEventQueue;
 
 	C_Camera *camera;
 	C_Frustum frustum;
@@ -176,7 +174,7 @@ static void Initializations(engine_t *engine)
 	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
 
-	// Enose tin camera me to frustum kai dose times gia tin proboli
+	/// Connect camera with frustum and initialize it
 	engine->camera = new C_Camera();
 	engine->camera->frustum = &frustum;
 	engine->camera->fov = 50.0f;
@@ -205,6 +203,9 @@ static void Initializations(engine_t *engine)
 	engine->metaball[2].position.y = gridCenter;
 	engine->metaball[2].position.z = gridCenter;
 	engine->metaball[2].radius = 3.0f;
+
+	/// BSP tree
+	tree.ReadGeometryFile("/sdcard/properMap2.bsp");
 
 	/// timer initialization
 	#ifdef ENABLE_TIMING
@@ -483,18 +484,13 @@ void android_main(struct android_app* state)
 	memset(&engine, 0, sizeof(engine_t));
 //	engine.camera->xVec.SetVector(1.0f, 0.0f, 0.0f);
 
-	// Make sure glue isn't stripped.
+	/// Make sure glue isn't stripped.
 	app_dummy();
 
 	state->userData = &engine;
 	state->onAppCmd = engine_handle_cmd;
 	state->onInputEvent = engine_handle_input;
 	engine.app = state;
-
-	/// Prepare to monitor accelerometer
-//	engine.sensorManager = ASensorManager_getInstance();
-//	engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager, ASENSOR_TYPE_ACCELEROMETER);
-//	engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager, state->looper, LOOPER_ID_USER, NULL, NULL);
 
 	if (state->savedState != NULL) {
 //		LOGE("restoring...\n");
@@ -508,7 +504,7 @@ void android_main(struct android_app* state)
 
 	/// loop waiting for stuff to do.
 	while (1) {
-		// Read all pending events.
+		/// Read all pending events.
 		int ident;
 		int events;
 		struct android_poll_source* source;
@@ -521,19 +517,6 @@ void android_main(struct android_app* state)
 			if (source != NULL) {
 				source->process(state, source);
 			}
-
-			/// If a sensor has data, process it now.
-//			if (ident == LOOPER_ID_USER) {
-//				if (engine.accelerometerSensor != NULL) {
-//					ASensorEvent event;
-//
-////					while (ASensorEventQueue_getEvents(engine.sensorEventQueue,&event, 1) > 0) {
-////						LOGI("accelerometer: x=%f y=%f z=%f",
-////							  event.acceleration.x, event.acceleration.y,
-////							  event.acceleration.z);
-////					}
-//				}
-//			}
 
 			/// Check if we are exiting.
 			if (state->destroyRequested != 0) {

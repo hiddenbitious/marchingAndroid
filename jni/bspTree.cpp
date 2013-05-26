@@ -19,6 +19,7 @@
 #include "vectors.h"
 #include "bspHelperFunctions.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 int polyCount;
 int leavesDrawn;
@@ -48,10 +49,8 @@ C_BspTree::C_BspTree(USHORT depth)
 	nNodes = 0;
 }
 
-
 C_BspTree::~C_BspTree(void)
 {
-	// Delete data
 	for(int i = 0 ; i < nBrushes ; i++) {
 		for(int j = 0 ; j < pBrushes[i].nPolys ; j++) {
 			delete[] pBrushes[i].pPolys[j].pVertices;
@@ -67,116 +66,102 @@ C_BspTree::~C_BspTree(void)
 
 void C_BspTree::IncreaseLeavesDrawn()
 {
-	if(nLeavesToDraw < nLeaves) { nLeavesToDraw++; }
-//	cout << "Leaves drawn: " << nLeavesToDraw << endl;
+	if(nLeavesToDraw < nLeaves) {
+		++nLeavesToDraw;
+	}
 }
+
 void C_BspTree::DecreaseLeavesDrawn()
 {
-	if(nLeavesToDraw > 0) { nLeavesToDraw--; }
-//	cout << "Leaves drawn: " << nLeavesToDraw << endl;
+	if(nLeavesToDraw > 0) {
+		--nLeavesToDraw;
+	}
 }
 
 void C_BspTree::IncreaseNodesDrawn()
 {
-	if(nNodesToDraw < nNodes) { nNodesToDraw++; }
-//	cout << "Nodes drawn: " << nNodesToDraw << endl;
+	if(nNodesToDraw < nNodes) {
+		++nNodesToDraw;
+	}
 }
+
 void C_BspTree::DecreaseNodesDrawn()
 {
-	if(nNodesToDraw > 0) { nNodesToDraw--; }
-//	cout << "Node drawn: " << nNodesToDraw << endl;
+	if(nNodesToDraw > 0) {
+		--nNodesToDraw;
+	}
 }
 
-//bool C_BspTree::ReadGeometryFile(const char* fileName)
-//{
-//	printf("%s\n", __FUNCTION__);
-//
-//	ifstream file(fileName , ios::in | ios::binary);
-//
-//	if(!file.is_open()) {
-//		cout << "Couldn't find bsp file." << endl;
-//		return false;
-//	}
-//
-//	file.read((char*)&nPolys , sizeof(int));
-//	cout << nPolys << endl;
-//	pRawPolys = new(poly*[nPolys]);
-//	int currentPoly = 0;
-//
-//	// Read number of brushes/meshes
-//	file.read((char*)&nBrushes , sizeof(int));
-//	cout << nBrushes << endl;
-//
-//	pBrushes = new brush[nBrushes];
-//
-//	// For each brush...
-//	for(int i = 0 ; i < nBrushes ; i++) {
-//		// ...read number of polys
-//		file.read((char*)&pBrushes[i].nPolys , sizeof(int));
-//
-//		pBrushes[i].pPolys = new poly[pBrushes[i].nPolys];
-//
-//		// For each poly in brush
-//		for(int j = 0 ; j < pBrushes[i].nPolys ; j++) {
-//			// Read number of vertices
-//			file.read((char*)&pBrushes[i].pPolys[j].nVertices , sizeof(int));
-//
-//			pBrushes[i].pPolys[j].pVertices = new C_Vertex[pBrushes[i].pPolys[j].nVertices];
-//			pBrushes[i].pPolys[j].pNorms = new C_Vertex[pBrushes[i].pPolys[j].nVertices];
-//
-//			pRawPolys[currentPoly] = &pBrushes[i].pPolys[j];
-//			pRawPolys[currentPoly]->usedAsDivider = false;
-//			currentPoly++;
-//
-//			// Read vertices
-//			for(int k = 0 ; k < pBrushes[i].pPolys[j].nVertices ; k++) {
-//				file.read((char*)&pBrushes[i].pPolys[j].pVertices[k].x , sizeof(float));
-//				file.read((char*)&pBrushes[i].pPolys[j].pVertices[k].y , sizeof(float));
-//				file.read((char*)&pBrushes[i].pPolys[j].pVertices[k].z , sizeof(float));
-//
-//				pBrushes[i].pPolys[j].pVertices[k].x /= scaleFactor;
-//				pBrushes[i].pPolys[j].pVertices[k].y /= scaleFactor;
-//				pBrushes[i].pPolys[j].pVertices[k].z /= scaleFactor;
-//			}
-////			TessellatePolygon ( &pBrushes[i].pPolys[j] );
-//		}
-//	}
-//
-//	file.close();
-//
-//	CalcNorms();
-//	return true;
-//}
+bool C_BspTree::ReadGeometryFile(const char* fileName)
+{
+	FILE *fp = fopen(fileName, "r");
+	if(!fp) {
+		LOGE("Error reading %s file.\n", fileName);
+		return false;
+	}
 
+	fread((void *)&nPolys, sizeof(int), 1, fp);
+	LOGI("Total number of polygons = %d\n", nPolys);
+	pRawPolys = new poly *[nPolys];
+	int currentPoly = 0;
 
-//void C_BspTree::Draw(void)
-//{
-//	for(int np = 0 ; np < nPolys ; np++) {
-//		glBegin(GL_POLYGON);
-//		for(int k = 0 ; k < pRawPolys[np]->nVertices ; k++) {
-//			glNormal3f(pRawPolys[np]->pNorms[k].x , pRawPolys[np]->pNorms[k].y , pRawPolys[np]->pNorms[k].z);
-//			glVertex3f(pRawPolys[np]->pVertices[k].x , pRawPolys[np]->pVertices[k].y , pRawPolys[np]->pVertices[k].z);
-//
-//			//glNormal3f ( rawPolys[np].pNorms[k].x , rawPolys[np].pNorms[k].y , rawPolys[np].pNorms[k].z );
-//			//glVertex3f ( rawPolys[np].pVertices[k].x , rawPolys[np].pVertices[k].y , rawPolys[np].pVertices[k].z );
-//		}
-//		glEnd();
-//	}
-//}
+	/// Read number of brushes/meshes
+	fread((void *)&nBrushes, sizeof(int), 1, fp);
+	LOGI("Total number of brushes = %d\n", nBrushes);
+	pBrushes = new brush[nBrushes];
 
+	/// For each brush...
+	for(int i = 0; i < nBrushes; i++) {
+		/// ...read number of polys
+		fread((void *) &(pBrushes[i].nPolys), sizeof(int), 1, fp);
+		pBrushes[i].pPolys = new poly[pBrushes[i].nPolys];
+		LOGI("brush %d - Number of polygons: %d\n", i, pBrushes[i].nPolys);
+
+		/// For each poly in brush
+		for(int j = 0 ; j < pBrushes[i].nPolys ; j++) {
+			/// Read number of vertices
+			fread((void *)&(pBrushes[i].pPolys[j].nVertices), sizeof(int), 1, fp);
+			LOGI("\tpoly: %d - Number of vertices: %d\n", j, pBrushes[i].pPolys[j].nVertices);
+
+			pBrushes[i].pPolys[j].pVertices = new C_Vertex[pBrushes[i].pPolys[j].nVertices];
+			pBrushes[i].pPolys[j].pNorms = new C_Vertex[pBrushes[i].pPolys[j].nVertices];
+
+			pRawPolys[currentPoly] = &pBrushes[i].pPolys[j];
+			pRawPolys[currentPoly]->usedAsDivider = false;
+			currentPoly++;
+
+			/// Read vertices
+			for(int k = 0 ; k < pBrushes[i].pPolys[j].nVertices ; k++) {
+				fread((void *)&(pBrushes[i].pPolys[j].pVertices[k].x), sizeof(float), 1, fp);
+				fread((void *)&(pBrushes[i].pPolys[j].pVertices[k].y), sizeof(float), 1, fp);
+				fread((void *)&(pBrushes[i].pPolys[j].pVertices[k].z), sizeof(float), 1, fp);
+
+				pBrushes[i].pPolys[j].pVertices[k].x /= scaleFactor;
+				pBrushes[i].pPolys[j].pVertices[k].y /= scaleFactor;
+				pBrushes[i].pPolys[j].pVertices[k].z /= scaleFactor;
+			}
+//			TessellatePolygon ( &pBrushes[i].pPolys[j] );
+		}
+	}
+
+	fclose(fp);
+
+	CalcNorms();
+	return true;
+}
 
 void C_BspTree::CalcNorms(void)
 {
-//	printf("%s\n", __FUNCTION__);
 	C_Vector3 norm;
+	int i, j, k;
 
-	// For each brush
-	for(int i = 0 ; i < nBrushes ; i++) {
-		// For each poly in brush
-		for(int j = 0 ; j < pBrushes[i].nPolys ; j++) {
+	/// For each brush
+	for(i = 0 ; i < nBrushes ; i++) {
+		/// For each poly in brush
+		for(j = 0 ; j < pBrushes[i].nPolys ; j++) {
 			norm = C_Vector3::CrossProduct2(&pBrushes[i].pPolys[j].pVertices[0] , &pBrushes[i].pPolys[j].pVertices[1] , &pBrushes[i].pPolys[j].pVertices[2]);
 			norm.Normalize();
-			for(int k = 0 ; k < pBrushes[i].pPolys[j].nVertices ; k++) {
+			for(k = 0 ; k < pBrushes[i].pPolys[j].nVertices ; k++) {
 				pBrushes[i].pPolys[j].pNorms[k].x = norm.x;
 				pBrushes[i].pPolys[j].pNorms[k].y = norm.y;
 				pBrushes[i].pPolys[j].pNorms[k].z = norm.z;
@@ -185,7 +170,6 @@ void C_BspTree::CalcNorms(void)
 		}
 	}
 }
-
 
 void C_BspTree::BuildPVS(void)
 {
@@ -361,6 +345,20 @@ void C_BspTree::BuildBspTree(void)
 //	cout << "***********************************************\n\n" << endl;
 }
 
+//void C_BspTree::Draw(void)
+//{
+//	for(int np = 0 ; np < nPolys ; np++) {
+//		glBegin(GL_POLYGON);
+//		for(int k = 0 ; k < pRawPolys[np]->nVertices ; k++) {
+//			glNormal3f(pRawPolys[np]->pNorms[k].x , pRawPolys[np]->pNorms[k].y , pRawPolys[np]->pNorms[k].z);
+//			glVertex3f(pRawPolys[np]->pVertices[k].x , pRawPolys[np]->pVertices[k].y , pRawPolys[np]->pVertices[k].z);
+//
+//			//glNormal3f ( rawPolys[np].pNorms[k].x , rawPolys[np].pNorms[k].y , rawPolys[np].pNorms[k].z );
+//			//glVertex3f ( rawPolys[np].pVertices[k].x , rawPolys[np].pVertices[k].y , rawPolys[np].pVertices[k].z );
+//		}
+//		glEnd();
+//	}
+//}
 
 int C_BspTree::Draw2(C_Vector3* cameraPosition)
 {
@@ -518,7 +516,6 @@ void C_BspTree::FindConnectedLeaves(void)
 	}
 }
 
-
 //void C_BspTree::WritePVSFile(const char *fileName)
 //{
 //	fstream filestr;
@@ -541,13 +538,11 @@ void C_BspTree::FindConnectedLeaves(void)
 
 bool C_BspTree::ReadPVSFile(const char *fileName)
 {
-//	fstream filestr;
-//	filestr.open(fileName , fstream::in);
-//
-//	if(filestr.fail()) {
-//		return false;
-//	}
-//
+	FILE *fp = fopen(fileName, "r");
+	if(!fp) {
+		return false;
+	}
+
 //	filestr >> nLeaves;
 //
 //	for(int i = 0 ; i < nLeaves ; i++) {
@@ -567,6 +562,6 @@ bool C_BspTree::ReadPVSFile(const char *fileName)
 //			leaves[i]->PVS.push_back(leaves[k]);
 //		}
 //	}
-//
+
 	return true;
 }
