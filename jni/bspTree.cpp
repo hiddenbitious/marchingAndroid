@@ -13,13 +13,15 @@
 *                                       *
 *     ***************************       *
 ****************************************/
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "bspTree.h"
 #include "bspNode.h"
 #include "vectors.h"
 #include "bspHelperFunctions.h"
-#include <stdlib.h>
-#include <stdio.h>
+
+#include "timer.h"
 
 int polyCount;
 int leavesDrawn;
@@ -171,6 +173,35 @@ void C_BspTree::CalcNorms(void)
 	}
 }
 
+void C_BspTree::BuildBspTree(void)
+{
+	LOGI("**********************\n");
+	LOGI("Building bsp tree...");
+
+	C_Timer timer;
+	timer.Initialize();
+
+	headNode = new C_BspNode(pRawPolys, nPolys);
+	C_BspNode::BuildBspTree(headNode, this);
+
+	TessellatePolygons();
+
+	float time = timer.GetTime();
+
+	LOGI("Done!\n");
+
+	/// Print out statistics
+	LOGI("\tTotal polygons in tree before splits: %d\n", nPolys);
+	LOGI("\tPolygons splitted: %d\n", nSplits);
+	LOGI("\tTotal polygons in tree after splits: %d\n", nPolys + nSplits);
+	LOGI("\tNumber of leaves in tree: %d\n", nLeaves);
+	LOGI("\tMinimun number of polys assigned in node: %d\n", lessPolysInNodeFound);
+	LOGI("\tMaximum depth allowed: %d\n", maxDepth);
+	LOGI("\tDepth reached: %d\n", depthReached);
+	LOGI("Time elapsed: %f\n", time / 1000.0f);
+	LOGI("**********************\n\n");
+}
+
 void C_BspTree::BuildPVS(void)
 {
 //	printf("%s\n", __FUNCTION__);
@@ -314,35 +345,6 @@ bool C_BspTree::RayIntersectsSomethingInTree(C_BspNode *node , C_Vertex *start ,
 	}
 
 	return false;
-}
-
-
-void C_BspTree::BuildBspTree(void)
-{
-//	cout << "***********************************************" << endl;
-//	cout << "Building bsp tree...";
-
-//	ULONG start = timeGetTime ();
-
-	headNode = new C_BspNode(pRawPolys , nPolys);
-	C_BspNode::BuildBspTree(headNode , this);
-
-	TessellatePolygons();
-
-//	ULONG time = timeGetTime () - start;
-
-//	cout << "Done!" << endl;
-//
-//	// Print out statistics
-//	cout << "\tTotal polygons in tree before splits: " << nPolys << endl;
-//	cout << "\tPolygons splitted: " << nSplits << endl;
-//	cout << "\tTotal polygons in tree after splits: " << nPolys + nSplits << endl;
-//	cout << "\tNumber of leaves in tree: " << nLeaves << endl;
-//	cout << "\tMinimun number of polys assigned in node: " << lessPolysInNodeFound << endl;
-//	cout << "\tMaximum depth allowed: " << maxDepth << endl;
-//	cout << "\tDepth reached: " << depthReached << endl;
-////	cout << "Time elapsed: " << (float)(time/1000.0f) << " seconds." << endl;
-//	cout << "***********************************************\n\n" << endl;
 }
 
 //void C_BspTree::Draw(void)

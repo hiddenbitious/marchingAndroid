@@ -19,7 +19,7 @@
 
 #define MAX_THREADS			3
 
-//#define ENABLE_LOGGING
+#define ENABLE_LOGGING
 //#define ENABLE_TIMING
 
 #ifdef ENABLE_TIMING

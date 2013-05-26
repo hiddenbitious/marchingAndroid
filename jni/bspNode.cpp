@@ -18,6 +18,7 @@
 #include "bspTree.h"
 #include "bspHelperFunctions.h"
 #include "bspNode.h"
+#include "debug.h"
 
 #define MINIMUMRELATION			0.5f
 #define MINIMUMRELATIONSCALE	2.0f
@@ -153,9 +154,9 @@ void C_BspNode::BuildBspTree(C_BspNode* node , C_BspTree *tree)
 
 	C_Plane tempPlane;
 
-	// An i geometria dimiourgei kleisto horo
-	// i an ehei ftasei arketa bathia sto dendro
-	// tote einai katalili gia filo sto dentro
+	/// If the geometry is convex
+	/// or if this node reaches the tree's node limit
+	/// then mark this node as a leaf
 	if(C_BspNode::IsConvex(node->geometry , node->nPolys) || node->depth >= maxDepth) {
 		if(C_BspNode::IsConvex(node->geometry , node->nPolys)) {
 			tree->nConvexRooms++;
@@ -172,17 +173,20 @@ void C_BspNode::BuildBspTree(C_BspNode* node , C_BspTree *tree)
 			tree->lessPolysInNodeFound = node->nPolys;
 		}
 
+		/// Break recursion
 		return;
 	}
 
-	// Diaforetika prepei na psaksoume gia epipedo diahorismou
+	/// Search for a partitioning plane
 	SelectPartitionfromList(node->geometry , node->nPolys , &tempPlane);
-
 	node->partitionPlane.setPlane(&tempPlane);
+
+	c_assert(!node->frontNode);
 	node->frontNode = new C_BspNode();
 	node->frontNode->depth = node->depth + 1;
 	node->frontNode->fatherNode = node;
 
+	c_assert(!node->backNode);
 	node->backNode = new C_BspNode();
 	node->backNode->depth = node->depth + 1;
 	node->backNode->fatherNode = node;
@@ -190,7 +194,7 @@ void C_BspNode::BuildBspTree(C_BspNode* node , C_BspTree *tree)
 	int result , nFront , nBack;
 	nFront = nBack = 0;
 
-	// Classify all polygons in this node
+	/// Classify all polygons in this node
 	for(int i = 0 ; i < node->nPolys ; i++) {
 		result = C_BspNode::ClassifyPolygon(&node->partitionPlane , node->geometry[i]);
 
@@ -206,7 +210,7 @@ void C_BspNode::BuildBspTree(C_BspNode* node , C_BspTree *tree)
 		}
 	}
 
-	// Allocate memory
+	/// Allocate memory
 	node->nodeID = ID++;
 
 	node->backNode->geometry = new(poly*[nBack]);
@@ -225,11 +229,9 @@ void C_BspNode::BuildBspTree(C_BspNode* node , C_BspTree *tree)
 		result = C_BspNode::ClassifyPolygon(&node->partitionPlane , node->geometry[i]);
 
 		if(result == FRONT) {
-			node->frontNode->geometry[nFront] = node->geometry[i];
-			nFront++;
+			node->frontNode->geometry[nFront++] = node->geometry[i];
 		} else if(result == BACK) {
-			node->backNode->geometry[nBack] = node->geometry[i];
-			nBack++;
+			node->backNode->geometry[nBack++] = node->geometry[i];
 		} else if(result == INTERSECTS) {
 			C_BspNode::SplitPolygon(&node->partitionPlane , node->geometry[i] , &node->frontNode->geometry[nFront++] , &node->backNode->geometry[nBack++]);
 			tree->nSplits++;
@@ -249,6 +251,7 @@ void C_BspNode::BuildBspTree(C_BspNode* node , C_BspTree *tree)
 			node->frontNode->geometry = NULL;
 		}
 	}
+
 	if(nBack) {
 		C_BspNode::BuildBspTree(node->backNode , tree);
 
@@ -260,7 +263,6 @@ void C_BspNode::BuildBspTree(C_BspNode* node , C_BspTree *tree)
 	}
 }
 
-
 bool C_BspNode::SelectPartitionfromList(poly** geometry , int nPolys , C_Plane* finalPlane)
 {
 	unsigned int nFront , nBack , nSplits , bestPlane = 0, bestSplits = INT_MAX;
@@ -271,7 +273,7 @@ bool C_BspNode::SelectPartitionfromList(poly** geometry , int nPolys , C_Plane* 
 	bestRelation = 0.0f;
 	minRelation = MINIMUMRELATION;
 
-	assert(nPolys);
+	c_assert(nPolys);
 
 	while(!found) {
 		for(int currentPlane = 0 ; currentPlane < nPolys ; currentPlane++) {
@@ -322,14 +324,13 @@ bool C_BspNode::SelectPartitionfromList(poly** geometry , int nPolys , C_Plane* 
 	}
 
 	geometry[bestPlane]->usedAsDivider = true;
-	// Keep plane's information so we can draw it
+	/// Keep plane's information so we can draw it
 	debug.push_back(finalPlane->points[0]);
 	debug.push_back(finalPlane->points[1]);
 	debug.push_back(finalPlane->points[2]);
 
 	return found;
 }
-
 
 void C_BspNode::SplitPolygon(C_Plane* plane , poly* polygon , poly** front , poly** back)
 {
