@@ -25,6 +25,8 @@ public:
 	unsigned int size();
 	/// Returns the size of the storage space currently allocated for the vector
 	unsigned int capacity();
+	/// Returns the size of each element in bytes
+	unsigned int Element();
 
 	/// Makes size == capacity and frees the extra memory
 	void compactify();
@@ -118,6 +120,18 @@ template <class T>
 unsigned int C_Array<T>::size()
 {
 	return count;
+};
+
+template <class T>
+unsigned int C_Array<T>::Element()
+{
+	return element;
+};
+
+template <class T>
+unsigned int C_Array<T>::capacity()
+{
+	return length;
 };
 
 template <class T>
