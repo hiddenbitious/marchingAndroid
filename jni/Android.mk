@@ -16,12 +16,12 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
-APP_OPTIM		:= release
+APP_OPTIM		:= debug
 LOCAL_MODULE    := marchingcubes
 LOCAL_CFLAGS    := -Werror -O3
 LOCAL_SRC_FILES := 	bbox.cpp vectors.cpp main.cpp camera.cpp frustum.cpp mmath.cpp plane.cpp\
 					quaternion.cpp glsl/glsl.cpp metaballs/cubeGrid.cpp timer.cpp\
-					bspTree.cpp bspNode.cpp bspHelperFunctions.cpp
+					bspTree.cpp bspNode.cpp bspHelperFunctions.cpp debug.cpp
 LOCAL_LDLIBS    := -landroid -lEGL -lGLESv2
 TARGET_ARCH		:= arm
 TARGET_ARCH_ABI	:= armeabi-v7a

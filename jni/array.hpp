@@ -2,7 +2,7 @@
 #define _C_ARRAY_H_
 
 #include <cstddef>
-#include <assert.h>
+#include "debug.h"
 #include <cstring>
 
 template<class T> class C_Array {
@@ -51,19 +51,19 @@ C_Array<T>::C_Array(int s)
 {
 	length = s ? s : 4;
 	data = new T[length];
-	assert(data);
+	c_assert(data);
 }
 
 template <class T>
 void C_Array<T>::push_back(const T & val)
 {
-	assert(element);
-	assert(length);
+	c_assert(element);
+	c_assert(length);
 
 	/// Vector is full. Double the space.
 	if(count == length) {
 		T *new_data = new T[2 * length];
-		assert(new_data);
+		c_assert(new_data);
 		memcpy((void *)new_data, (void *)data, length * element);
 		length *= 2;
 		delete[] data;
@@ -76,8 +76,8 @@ void C_Array<T>::push_back(const T & val)
 template <class T>
 T C_Array<T>::pop_back()
 {
-	assert(element);
-	assert(data);
+	c_assert(element);
+	c_assert(data);
 
 	if(count > 0) {
 		--count;
@@ -88,9 +88,9 @@ T C_Array<T>::pop_back()
 template <class T>
 T& C_Array<T>::operator[](int index)
 {
-	assert(element);
-	assert(data);
-	assert(index <= count);
+	c_assert(element);
+	c_assert(data);
+	c_assert(index <= count);
 
 	return data[index];
 };
@@ -98,10 +98,10 @@ T& C_Array<T>::operator[](int index)
 template <class T>
 void C_Array<T>::compactify()
 {
-	assert(element);
-	assert(length);
-	assert(data);
-	assert(count <= length);
+	c_assert(element);
+	c_assert(length);
+	c_assert(data);
+	c_assert(count <= length);
 
 	if(length == count) {
 		return;
@@ -110,7 +110,7 @@ void C_Array<T>::compactify()
 	/// Dont let it be zero
 	length = count ? count : 4;
 	T *new_data = new T[length];
-	assert(new_data);
+	c_assert(new_data);
 	memcpy((void *)new_data, (void *)data, length * element);
 	delete[] data;
 	data = new_data;
@@ -137,8 +137,8 @@ unsigned int C_Array<T>::capacity()
 template <class T>
 void C_Array<T>::erase(int index)
 {
-	assert(element);
-	assert(data);
+	c_assert(element);
+	c_assert(data);
 
 	if(!count || index < 0 || index >= count) {
 		return;
